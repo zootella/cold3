@@ -35,9 +35,8 @@ credentialCloseAccount,
 } from './level3.js'
 
 let _grid = []//grid test functions collected by grid(); run by runDatabaseTests()
-const gridDoor = {origin: 'https://example.com', ip: '203.0.113.7', geography: {country: 'US', city: 'Akron'}, browser: {agent: 'Mozilla/5.0'}}//the door grid tests run below, holding the four cells ledger writes read from a door, so they find the request they belong to
+const gridDoor = {origin: 'https://example.com', ip: '203.0.113.7', geography: {country: 'US', city: 'Akron'}, browser: {agent: 'Mozilla/5.0'}, browserHash: 'VNTDBXDMLKBBT7YICWOHGYE2DKIM7HND55KNAMXXFOWUYAK6CXJQ'}//the door grid tests run below, holding the four cells and the browser hash ledger writes read from a door, so they find the request they belong to
 function grid(f) { _grid.push(f) }
-const browserHash52 = 'VNTDBXDMLKBBT7YICWOHGYE2DKIM7HND55KNAMXXFOWUYAK6CXJQ'//a well-formed browser hash for tests whose function contracts require one
 
 //the otp tests read each code from the inbox the simulation database carries, which send fills in place of handing the message to the lambda, the way a person reads the code from their email or texts
 async function _otpCode(f0) { return (await getDatabase()).inbox.findLast(m => m.f0 == f0) }//the newest message to an address: {type, f0, tag, answer}
@@ -47,7 +46,7 @@ grid(async () => {//otp: sanity check
 	let userTag = Tag()//otp flows require a signed-in user; the endpoint resolves the tag from the browser and passes it down
 	let v = validateEmailOrPhone(Tag() + '@example.com')//a random address keeps trail rate limits from earlier test runs out of this test
 
-	let sendResult = await credentialOtpSend({browserHash: browserHash52, v, provider: 'Amazon.', userTag})
+	let sendResult = await credentialOtpSend({v, provider: 'Amazon.', userTag})
 	ok(sendResult.success)
 	let m = await _otpCode(v.f0)
 	ok(m.tag && m.answer)//the code went out, with the tag that names the challenge
@@ -66,8 +65,8 @@ grid(async () => {//otp: two addresses in flight at once, alice's email and phon
 	let e = validateEmailOrPhone(Tag() + '@example.com'), p = validateEmailOrPhone('(510) 555-1234')
 
 	//alice requests a code to her email, then a minute later, her phone
-	await credentialOtpSend({browserHash: browserHash52, v: e, provider: 'Twilio.', userTag}); ageNow(Time.minute)
-	await credentialOtpSend({browserHash: browserHash52, v: p, provider: 'Amazon.', userTag})
+	await credentialOtpSend({v: e, provider: 'Twilio.', userTag}); ageNow(Time.minute)
+	await credentialOtpSend({v: p, provider: 'Amazon.', userTag})
 	ok((await _otpLive(userTag, 'Email.')).length == 1 && (await _otpLive(userTag, 'Phone.')).length == 1)//one live challenge of each type
 	let me = await _otpCode(e.f0), mp = await _otpCode(p.f0)
 
@@ -80,7 +79,7 @@ grid(async () => {//otp: code expires after 20 minutes
 	let userTag = Tag()
 	let v = validateEmailOrPhone(Tag() + '@example.com')
 
-	ok((await credentialOtpSend({browserHash: browserHash52, v, provider: 'Amazon.', userTag})).success)
+	ok((await credentialOtpSend({v, provider: 'Amazon.', userTag})).success)
 	let m = await _otpCode(v.f0)
 
 	ageNow(30*Time.minute)//wait past the 20 minute expiration
@@ -94,8 +93,8 @@ grid(async () => {//otp: 3 wrong guesses then correct works; 4 wrong exhausts co
 	let userTag = Tag()
 	let v3 = validateEmailOrPhone(Tag() + '@example.com'), v4 = validateEmailOrPhone(Tag() + '@example.com')
 
-	await credentialOtpSend({browserHash: browserHash52, v: v3, provider: 'Amazon.', userTag}); ageNow(Time.minute)
-	await credentialOtpSend({browserHash: browserHash52, v: v4, provider: 'Amazon.', userTag})
+	await credentialOtpSend({v: v3, provider: 'Amazon.', userTag}); ageNow(Time.minute)
+	await credentialOtpSend({v: v4, provider: 'Amazon.', userTag})
 	let m3 = await _otpCode(v3.f0), m4 = await _otpCode(v4.f0)
 
 	ok((await credentialOtpEnter({tag: m3.tag, guess: '101', userTag})).outcome == 'Wrong.')
@@ -114,11 +113,11 @@ grid(async () => {//otp: replacement code kills previous code to same address
 	let userTag = Tag()
 	let v = validateEmailOrPhone(Tag() + '@example.com')
 
-	await credentialOtpSend({browserHash: browserHash52, v, provider: 'Amazon.', userTag})
+	await credentialOtpSend({v, provider: 'Amazon.', userTag})
 	let m1 = await _otpCode(v.f0)
 
 	ageNow(Time.minute)//wait past soft limit cooldown
-	await credentialOtpSend({browserHash: browserHash52, v, provider: 'Amazon.', userTag})//second code will replace the first
+	await credentialOtpSend({v, provider: 'Amazon.', userTag})//second code will replace the first
 	let m2 = await _otpCode(v.f0)
 	ok(m2.tag != m1.tag)//it's a different code
 	let live = await _otpLive(userTag, 'Email.')
@@ -131,14 +130,14 @@ grid(async () => {//otp: a correct guess closes the challenge, so the same right
 	let userTag = Tag()
 	let v = validateEmailOrPhone(Tag() + '@example.com')
 
-	await credentialOtpSend({browserHash: browserHash52, v, provider: 'Amazon.', userTag})
+	await credentialOtpSend({v, provider: 'Amazon.', userTag})
 	let m = await _otpCode(v.f0)
 	ok((await credentialOtpEnter({tag: m.tag, guess: m.answer, userTag})).success)//correct
 	ok((await credentialOtpEnter({tag: m.tag, guess: m.answer, userTag})).outcome == 'Expired.')//the same right answer again: the challenge is hidden, so there's nothing to answer
 })
 grid(async () => {//otp: hard limit of 24 codes per address per day
 	let v = validateEmailOrPhone(Tag() + '@example.com')//attacker targets a single address
-	const send = async () => await credentialOtpSend({browserHash: browserHash52, v, provider: 'Amazon.', userTag: Tag()})//each send from a different user; the limits are per address, not per user
+	const send = async () => await credentialOtpSend({v, provider: 'Amazon.', userTag: Tag()})//each send from a different user; the limits are per address, not per user
 	for (let i = 0; i < 24; i++) {//send 24 messages, 5 minutes apart
 		ageNow(5*Time.minute)//message 1 at 00:05, message 2 at 00:10, all the way to message 24 at 02:00
 		let r = await send()
@@ -158,7 +157,7 @@ grid(async () => {//otp: hard limit of 24 codes per address per day
 
 grid(async () => {//otp: soft limit requires 1 minute between codes after first 2 codes in past 5 days
 	let v = validateEmailOrPhone(Tag() + '@example.com')
-	const send = async () => await credentialOtpSend({browserHash: browserHash52, v, provider: 'Amazon.', userTag: Tag()})//each send from a different user; the limits are per address, not per user
+	const send = async () => await credentialOtpSend({v, provider: 'Amazon.', userTag: Tag()})//each send from a different user; the limits are per address, not per user
 
 	ok((await send()).success)//code sent at 00:00:00
 	ok((await send()).success)//code sent at 00:00:00, first two go out back-to-back
@@ -173,7 +172,7 @@ grid(async () => {//otp: soft limit requires 1 minute between codes after first 
 })
 grid(async () => {//otp: first code to an address in 5d window is short (4 digits), then standard (6), then short again
 	let v = validateEmailOrPhone(Tag() + '@example.com')
-	const send = async () => await credentialOtpSend({browserHash: browserHash52, v, provider: 'Amazon.', userTag: Tag()})//each send from a different user; code length follows the address's history alone
+	const send = async () => await credentialOtpSend({v, provider: 'Amazon.', userTag: Tag()})//each send from a different user; code length follows the address's history alone
 
 	await send()//send two codes back to back
 	ok((await _otpCode(v.f0)).answer.length == 4)//first one short
@@ -537,6 +536,9 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	let discordRow = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', json: {provider: 'Discord.'}, event_text: 'Proven.'}))[0]
 	ok(discordRow.f0_text == 'alice@example.com' && discordRow.f2_text == 'alice@example.com')//validated email filled into f0/1/2
 	ok(discordRow.json.proof.account.a == 1)//the note preserves the auth.js slice as real nested json
+	let ledger = await queryGet('ledger_table', {user_tag_text: userTag, action_text: 'Oauth.'})//the ledger row beside the credential row, from the same values
+	ok(ledger.length == 1 && ledger[0].event_text == 'Proven.' && ledger[0].provider_text == 'Discord.' && ledger[0].browser_hash == gridDoor.browserHash)
+	ok(ledger[0].json.identifier == 'd123' && ledger[0].json.handle == 'alice_d' && ledger[0].json.email == 'alice@example.com' && ledger[0].json.proof.account.a == 1)//the link's facts and the whole proof, so the ledger tells the story once the credential row is gone
 
 	//link Google too; get returns both
 	await credentialOauthSet({userTag, provider: 'Google.', identifier: 'g456', handle: 'alice@gmail.com', name: 'Alice G.', email: aliceEmailObj})
@@ -546,6 +548,8 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	ok((await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd789', handle: 'alice_new', email: aliceEmailObj})).outcome == 'OauthAlreadyLinked.')
 	let stillOriginal = (await credentialOauthGet({userTag})).find(o => o.provider == 'Discord.')
 	ok(stillOriginal.identifier == 'd123' && stillOriginal.handle == 'alice_d')//unchanged — not overwritten by the blocked Set
+	let refused = await queryGet('ledger_table', {user_tag_text: userTag, action_text: 'Oauth.', event_text: 'Refused.'})//the refusal touched no table and left its row, with what was tried
+	ok(refused.length == 1 && refused[0].json.outcome == 'OauthAlreadyLinked.' && refused[0].json.identifier == 'd789')
 
 	//to switch accounts the user must Remove first, then Set succeeds and points at the new account
 	await credentialOauthRemove({userTag, provider: 'Discord.'})
@@ -583,6 +587,7 @@ grid(async () => {//oauth: cross-user providerId uniqueness — one provider ide
 	ok(!blocked.ok && blocked.outcome == 'OauthClaimedElsewhere.')
 	ok((await credentialOauthGet({userTag: aliceTag})).find(o => o.provider == 'Discord.').handle == 'alice')//alice unchanged
 	ok((await credentialOauthGet({userTag: bobTag})).length == 0)//bob has nothing written
+	ok((await queryGet('ledger_table', {user_tag_text: bobTag, action_text: 'Oauth.'}))[0].json.outcome == 'OauthClaimedElsewhere.')//but his try is in the ledger, with the identifier alice holds; the third kind of record, an identity contested between users
 
 	//alice releases the claim — her row gets hidden, so the providerId becomes available again
 	await credentialOauthRemove({userTag: aliceTag, provider: 'Discord.'})
@@ -925,7 +930,7 @@ grid(async () => {//otp into credential: the full flow writes lifecycle rows for
 	let userTag = Tag()
 	let v = validateEmailOrPhone(Tag() + '@example.com')//random address keeps trail rate limits from earlier test runs out of this test
 
-	ok((await credentialOtpSend({browserHash: browserHash52, v, provider: 'Amazon.', userTag})).success)
+	ok((await credentialOtpSend({v, provider: 'Amazon.', userTag})).success)
 	let got = await credentialOtpGet({userTag, type: 'Email.'})
 	ok(got.addresses.length == 1 && got.addresses[0].event == 'Challenged.')//the send wrote the mention and the challenge
 	ok(got.challenges.length == 1 && got.challenges[0].tag == (await _otpCode(v.f0)).tag)//and the challenge is live in the snapshot
@@ -941,7 +946,7 @@ grid(async () => {//otp into credential: a challenge belongs to the user who sta
 	await clear('credential_table')
 	let userTag = Tag()
 	let v = validateEmailOrPhone(Tag() + '@example.com')
-	ok((await credentialOtpSend({browserHash: browserHash52, v, provider: 'Amazon.', userTag})).success)
+	ok((await credentialOtpSend({v, provider: 'Amazon.', userTag})).success)
 	let m = await _otpCode(v.f0)
 
 	//a different user holding the correct code finds no challenge of theirs, and the challenge stays live for its owner
@@ -962,21 +967,21 @@ grid(async () => {//otp into credential: a held address can't be challenged or c
 
 	//alice proves the address
 	let alice = Tag()
-	await credentialOtpSend({browserHash: browserHash52, v, provider: 'Amazon.', userTag: alice})
+	await credentialOtpSend({v, provider: 'Amazon.', userTag: alice})
 	let m = await _otpCode(v.f0)
 	ok((await credentialOtpEnter({tag: m.tag, guess: m.answer, userTag: alice})).success)
 	ok((await credentialOtpHolder({type: v.type, f0: v.f0})).userTag == alice)
 
 	//alfred asks for a code to alice's address; his mention is recorded but no code goes out
 	let alfred = Tag()
-	let r = await credentialOtpSend({browserHash: browserHash52, v, provider: 'Amazon.', userTag: alfred})
+	let r = await credentialOtpSend({v, provider: 'Amazon.', userTag: alfred})
 	ok(!r.success && r.outcome == 'Held.')
 	let his = await credentialOtpGet({userTag: alfred, type: 'Email.'})
 	ok(his.challenges.length == 0)//no challenge was created
 	ok(his.addresses[0].event == 'Mentioned.')//the mention is on the record
 
 	//alice herself can still request another code to her own address, for a future sudo check or new device
-	ok((await credentialOtpSend({browserHash: browserHash52, v, provider: 'Amazon.', userTag: alice})).success)
+	ok((await credentialOtpSend({v, provider: 'Amazon.', userTag: alice})).success)
 	ok((await _otpLive(alice, 'Email.')).length == 1)//and it's live beside her proof
 })
 
@@ -986,9 +991,9 @@ grid(async () => {//otp into credential: two users' challenges to one address co
 	let alice = Tag(), bob = Tag()
 	let v = validateEmailOrPhone(Tag() + '@example.com')
 
-	await credentialOtpSend({browserHash: browserHash52, v, provider: 'Amazon.', userTag: alice})
+	await credentialOtpSend({v, provider: 'Amazon.', userTag: alice})
 	let ma = await _otpCode(v.f0)
-	await credentialOtpSend({browserHash: browserHash52, v, provider: 'Amazon.', userTag: bob})//nobody has proven the address yet, so bob can be challenged at it too
+	await credentialOtpSend({v, provider: 'Amazon.', userTag: bob})//nobody has proven the address yet, so bob can be challenged at it too
 	let mb = await _otpCode(v.f0)
 	ok((await _otpLive(alice, 'Email.')).length == 1 && (await _otpLive(bob, 'Email.')).length == 1)//replacement is scoped by owner: his send would replace his own earlier challenge, never hers
 
@@ -1003,7 +1008,7 @@ grid(async () => {//otp into credential: removing an address mid-challenge takes
 	await clear('credential_table')
 	let userTag = Tag()
 	let v = validateEmailOrPhone(Tag() + '@example.com')
-	await credentialOtpSend({browserHash: browserHash52, v, provider: 'Amazon.', userTag})
+	await credentialOtpSend({v, provider: 'Amazon.', userTag})
 	await credentialOtpRemove({userTag, type: 'Email.', f0: v.f0})//she removes the address while the challenge is still live; remove hides every row about the address, the challenge included
 	let m = await _otpCode(v.f0)
 	ok((await credentialOtpEnter({tag: m.tag, guess: m.answer, userTag})).outcome == 'Expired.')//the code itself is still correct, but the challenge is gone with the address
@@ -1105,8 +1110,9 @@ grid(async () => {//ledger: an audit record lands durable in our own database, m
 	ok(row.client_json.geography.city == 'Akron' && row.client_json.browser.agent == 'Mozilla/5.0' && !('renderer' in row.client_json.browser))//and so do its geography and its browser's agent, on every kind of row; only a hit adds the page's graphics
 	ok(row.json.color == 'Green.' && row.json.count == 7)//the note arrives back parsed, an object rather than text
 
-	await ledgerAdd({action: 'QuickExample.', browserHash})//only the action and browser are required; the rest defaults to blanks
+	await ledgerAdd({action: 'QuickExample.'})//only the action is required; the browser hash comes from the door, and the rest defaults to blanks
 	let quick = (await queryGet('ledger_table', {action_text: 'QuickExample.'}))[0]
+	ok(quick.browser_hash == gridDoor.browserHash)//the door's, the way every row below a worker door gets it; the row above named its own, and that won
 	ok(quick.user_tag_text == '' && quick.hash_text == '' && makeText(quick.json) == '{}')
 	ok(quick.ip_text == gridDoor.ip && quick.origin_text == gridDoor.origin)//never blank below a door, because the door always knows them
 	ok(quick.event_text == '' && quick.provider_text == '')//the verb and the third party are blank when the action says it all
@@ -1174,7 +1180,7 @@ grid(async () => {//ledger: the hash margin gathers every record about one thing
 	await ledgerAddMany([//three actions, two subjects: the hash is what ties records together, not the action
 		{action: 'ExampleSent.',    browserHash, hash: subject, json: {n: 1}},
 		{action: 'ExampleProven.',  browserHash, hash: subject, json: {n: 2}},
-		{action: 'ExampleRemoved.', browserHash, hash: other,   note: {n: 3}},
+		{action: 'ExampleRemoved.', browserHash, hash: other,   json: {n: 3}},
 		{action: 'ExampleSent.',    browserHash},//no subject, so no hash--the common case
 	])
 	let mine = await queryGet('ledger_table', {hash_text: subject})

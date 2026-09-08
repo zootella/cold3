@@ -605,6 +605,7 @@ export async function doorWorker(method, {
 			door = await doorWorkerOpen({method, workerEvent})
 			await doorWorkerCheck({door, actions, useTurnstile})
 			let browserHash = await hashText(checkTag(door.workerEvent.context.browserTag))//the browser tag must always be present; toss if not a valid tag; valid tag passes through; hash to prevent worry of leaking back to untrusted page
+			door.browserHash = browserHash
 			door.brownie = await openBrownie({envelope: door.body?.brownie, browserHash})//if the page sent a brownie, pin the opened letter for request code to read and change in place; the door never matches users--request code touches only notes whose userTag matches the signed-in user it resolved from the database
 			let brownieArrived = door.brownie ? makeText(door.brownie.notes) : ''//snapshot the notes as request code first sees them, so sealBrownie below can tell an untouched letter from a changed one
 			response = await doorAsyncLocalStorageRun(door, () => doorHandleBelow({//run the handler with the door retrievable below it, so getDoor() answers anywhere below, however deep, and even through awaits! 🪄🎩
@@ -674,6 +675,7 @@ export async function doorWorkerLite({//the third door: doorWorker with fewer re
 			door = await doorWorkerLiteOpen({workerEvent})
 			//no check step here: there is no action to check against a list, and the module validates its own request
 			let browserHash = await hashText(checkTag(door.workerEvent.context.browserTag))
+			door.browserHash = browserHash
 			response = await doorAsyncLocalStorageRun(door, () => doorHandleBelow({
 				door,
 				workerEvent,//the module wants the raw event, to read the request its own way

@@ -196,10 +196,9 @@ export const otpConstants = {//factory settings for OTP codes to prove email and
 }
 Object.freeze(otpConstants)
 
-export async function credentialOtpSend({v, provider, userTag, browserHash}) {
+export async function credentialOtpSend({v, provider, userTag}) {
 	checkTag(userTag)//the endpoint resolved the signed-in user and answered SignedOut. if there wasn't one; an otp flow requires a signed-in user from send through enter
 	checkAction(provider)//and the endpoint mapped the page's provider letter to a canonical tag like 'Amazon.' or 'Twilio.'; fail loud here, before anything reaches the lambda
-	checkHash(browserHash)//the door hashed the browser tag it requires on every request; the challenge never binds to it, but the ledger row at the end names it as who and where
 
 	// 📬 Step 0 Claim: Has another user already proven they control this address?
 	let holder = await credentialOtpHolder({type: v.type, f0: v.f0})
@@ -256,7 +255,7 @@ export async function credentialOtpSend({v, provider, userTag, browserHash}) {
 	])
 	await credentialOtpChallenged({userTag, type: o.address.type, v: o.address, provider: o.provider, tag: o.tag})//the Challenged. row: the state of the flow, with the tag that names it and the provider that carried the code
 
-	if (sent) await ledgerAdd({action: o.address.type, event: 'Challenged.', provider: o.provider, browserHash, userTag, hash: await hashText(o.address.f0), json: {tag: o.tag, ...sent}})//the whole task the lambda returned--provider, parameters, request, response, error, duration--kept as a queryable record of this third party send, with the tag so the record is found by the challenge it belongs to; the hash of the address gathers it with every other record about that address; last, after the challenge is fully recorded, so a refused note can't strand a code that's already in the user's inbox
+	if (sent) await ledgerAdd({action: o.address.type, event: 'Challenged.', provider: o.provider, userTag, hash: await hashText(o.address.f0), json: {tag: o.tag, ...sent}})//the whole task the lambda returned--provider, parameters, request, response, error, duration--kept as a queryable record of this third party send, with the tag so the record is found by the challenge it belongs to; the hash of the address gathers it with every other record about that address; last, after the challenge is fully recorded, so a refused note can't strand a code that's already in the user's inbox
 
 	return {success: true}//ttd january, if the lambda fails, but doesn't throw, we know there's no email waiting, but don't tell the page, or try a second provider; revisit this choice at some point
 }
@@ -720,20 +719,23 @@ export async function credentialOauthChallenge({userTag, provider}) {//record we
 /*
 record proof a user controls a third party oauth account, with information about it
 returns {ok: true} on insert, or {ok: false, outcome: '...'} on collision; outcome is 'OauthAlreadyLinked.' (this user has another account for this provider) or 'OauthClaimedElsewhere.' (the providerId is held by a different cold3 account)
+writes the Oauth. ledger row beside the credential row, Proven. after the insert or Refused. with the outcome, carrying the same facts about the link and the whole proof, so the ledger tells the story of the link on its own
 ui will let user change their account with a provider by removing an old one and then adding a new one
 caller is expected to have run credentialOauthParse on the proof and pass the resulting fields here; this function is dumb storage and does no provider-specific parsing of its own
 */
 export async function credentialOauthSet({userTag, provider, proof, identifier, handle, name, email}) {
 	checkTag(userTag); checkAction(provider); checkText(identifier)
+	let json = {identifier, handle: handle ?? undefined, name: name ?? undefined, email: email?.f2, proof}//what the ledger row carries about the link, the provider in its own column: the facts the credential row keeps, the email's face, and the provider's whole proof; ?? undefined turns a provider's null into an absent key, the blank of a property
+	let refuse = async (outcome) => { await ledgerAdd({action: 'Oauth.', event: 'Refused.', provider, userTag, json: {...json, outcome}}); return {ok: false, outcome} }//a refusal touches no table, writes its ledger row, and answers the caller
 
 	//check 1: this user already has SOME account linked for this provider
 	let mine = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', json: {provider}, event_text: 'Proven.'})
-	if (mine.length) return {ok: false, outcome: 'OauthAlreadyLinked.'}//already linked; caller must prompt user to Remove first to switch accounts
+	if (mine.length) return await refuse('OauthAlreadyLinked.')//already linked; caller must prompt user to Remove first to switch accounts
 
 	//check 2: any OTHER user has THIS specific providerId linked — one provider identity, one cold3 account; queryGet filters hidden rows, so a removed claim is releasable to a new holder
 	//trust the provider: the identifier is unique per user on their side, and is in the normalized form they hand to us — we store it verbatim; credential15 indexes the identifier path this filter rides
 	let claimed = await queryGet('credential_table', {type_text: 'Oauth.', json: {provider, identifier}, event_text: 'Proven.'})
-	if (claimed.some(r => r.user_tag != userTag)) return {ok: false, outcome: 'OauthClaimedElsewhere.'}
+	if (claimed.some(r => r.user_tag != userTag)) return await refuse('OauthClaimedElsewhere.')
 
 	/*
 	ttd may, more to complete and test here soon:
@@ -753,6 +755,7 @@ export async function credentialOauthSet({userTag, provider, proof, identifier, 
 			proof,//auth.js/provider slice (drops our envelope wrapper) as real nested json, inner nulls verbatim, for audit and future re-parsing
 		},
 	})
+	await ledgerAdd({action: 'Oauth.', event: 'Proven.', provider, userTag, json})//the ledger row after the credential row, from the same values
 	return {ok: true}
 }
 export async function credentialOauthRemove({userTag, provider}) {
@@ -1155,7 +1158,7 @@ function _ledgerRow(e, now) {//check one record and shape it as a ledger_table r
 		action,//the subject of the record, like 'Email.'
 		event = '',//the verb, like 'Challenged.'; blank when the action says it all
 		provider = '',//the third party involved, like 'Twilio.'; blank when none was
-		browserHash,//the browser that was here for this
+		browserHash = door.browserHash,//the browser that was here, from the door like the ip and origin, unless the record names one itself, as a hit does with the hash it was given
 		userTag = '',//the user, or blank if nobody's identified
 		hash = '',//the row's one meaningful hash when what happened was about something we can name that way, so every record about that thing is an indexed lookup; blank when it wasn't
 		json = {},//everything else about what happened, kept as data a later reader can query and read back
@@ -1163,7 +1166,7 @@ function _ledgerRow(e, now) {//check one record and shape it as a ledger_table r
 	} = e
 	checkAction(action); checkActionOrBlank(event); checkActionOrBlank(provider); checkHash(browserHash)
 	checkTagOrBlank(userTag); checkHashOrBlank(hash); checkPlain(json); checkPlain(browser)
-	checkTextOrBlank(door.ip); checkTextOrBlank(door.origin); checkPlain(door.geography); checkPlain(door.browser)//what the ledger requires of the door above it: a worker door always has all four, a lambda door has none, and a test door is whatever the test made
+	checkTextOrBlank(door.ip); checkTextOrBlank(door.origin); checkPlain(door.geography); checkPlain(door.browser)//what the ledger requires of the door above it, beyond the browser hash checked above: a worker door always has all four, a lambda door has none, and a test door is whatever the test made
 	return {
 		row_tick: now,
 		wrapper_hash: wrapper.hash,
