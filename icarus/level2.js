@@ -513,7 +513,7 @@ export async function fetchLambda({from, route, action, body = {}}) {//fetch to 
 	checkActions({action: from, actions: ['Page.', 'Worker.']}); checkRoute(route); checkAction(action)
 
 	body = makePlain({...body, action})
-	if (from == 'Worker.') body.envelope = await sealEnvelope('Network23.', Limit.handoff, {})//workers prove identity with a sealed envelope; pages can't (no server key), so each page->lambda route handles its own auth
+	if (from == 'Worker.') body.envelope = await sealEnvelope('Network23.', Limit.handoff, {browserHash: getDoor().browserHash})//workers prove identity with a sealed envelope; pages can't (no server key), so each page->lambda route handles its own auth. the letter carries the browser the worker is serving, so a ledger row the lambda writes names it the way the worker's rows do
 
 	const f = $fetch//used from Nuxt front end or Nuxt back end, either way, we always have Nuxt's $fetch
 	return await f(lambda23(route), {method: 'POST', body})
@@ -645,6 +645,7 @@ export async function doorLambda(method, {
 
 			door = await doorLambdaOpen({from, method, lambdaEvent, lambdaContext})
 			await doorLambdaCheck({door, actions})
+			if (door.from == 'Worker.') door.browserHash = door.letter.browserHash//the browser the worker was serving, from the sealed letter, so a ledger row written below names it as the worker's rows do
 			response = await doorAsyncLocalStorageRun(door, () => doorHandleBelow({
 				door,
 				query: door.query,//lambda GET not in use, but here for the future, ttd november2025
@@ -791,6 +792,12 @@ async function doorLambdaOpen({from, method, lambdaEvent, lambdaContext}) {
 
 	door.lambdaEvent = lambdaEvent//save everything amazon is telling us about it
 	door.lambdaContext = lambdaContext
+	door.headers = lambdaEvent.headers
+	door.origin = headerOrigin({headers: door.headers})//the function url's host and forwarded protocol, assembled the way the worker door assembles its origin
+	door.ip = toTextOrBlank(isCloud() ? lambdaEvent.requestContext?.http?.sourceIp : lambdaEvent.requestContext?.identity?.sourceIp)//the address that reached the function url, from payload format 2.0 in the cloud and the older api gateway format serverless-offline sends locally
+	door.geography = {}//no cloudflare stands in front of a lambda, so where the ip is stays unknown, and {} means exactly that
+	door.browser = headerBrowser({headers: door.headers})//the agent string of whoever called: a browser, or the worker's fetch
+	//^ the four cells a ledger row reads from the door, the same four the worker doors carry
 
 	let requestMethod = getLambdaMethod(lambdaEvent)
 	if (method != requestMethod) toss('method mismatch', {method, requestMethod, door})//method is what code requires; enforce it
@@ -1017,7 +1024,7 @@ function headerOrigin({headers}) {
 	//just in cloudflare, we need the origin like "http://localhost:3000" or "https://cold3.cc"
 	//from chat and observation, we assemble it from two headers
 	//workerEvent.req.url should be useful, but it's just the route, like "/api/something", which is the part we don't need!
-	//we don't need the origin on the lambda side, and it's likely harder to get, anyway
+	//the lambda door assembles its origin from the same two headers, which a function url sets the same way
 }
 function headerGeography({headers}) {//where cloudflare placed the request's ip, from the headers it adds: country always, and city, region, and postal when it knows them; a key cloudflare didn't send stays absent, and without cloudflare the object is {}
 	let geography = {}
