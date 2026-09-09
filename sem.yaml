@@ -1,5 +1,5 @@
 summary:
-  generated: 2026sep8.1354.485
+  generated: 2026sep9.1750.50325
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -209,8 +209,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 2m old
-      current: 3.1127.0 on 2026sep04 0m old
-      latest: 3.1127.0 on 2026sep04 0m old
+      current: 3.1128.0 on 2026sep08 0m old
+      latest: 3.1128.0 on 2026sep08 0m old
     downloads:
       weekly: 34,442,501
       on: 2026aug18.1523.45867
@@ -222,8 +222,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 2m old
-      current: 3.1127.0 on 2026sep04 0m old
-      latest: 3.1127.0 on 2026sep04 0m old
+      current: 3.1128.0 on 2026sep08 0m old
+      latest: 3.1128.0 on 2026sep08 0m old
     downloads:
       weekly: 3,186,203
       on: 2026aug18.1523.45867
@@ -235,8 +235,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 2m old
-      current: 3.1127.0 on 2026sep04 0m old
-      latest: 3.1127.0 on 2026sep04 0m old
+      current: 3.1128.0 on 2026sep08 0m old
+      latest: 3.1128.0 on 2026sep08 0m old
     downloads:
       weekly: 3,078,359
       on: 2026aug18.1523.45867
@@ -248,8 +248,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 2m old
-      current: 3.1127.0 on 2026sep04 0m old
-      latest: 3.1127.0 on 2026sep04 0m old
+      current: 3.1128.0 on 2026sep08 0m old
+      latest: 3.1128.0 on 2026sep08 0m old
     downloads:
       weekly: 16,337,605
       on: 2026aug18.1523.45867
@@ -260,8 +260,8 @@ modules:
     from: root
     versions:
       declared: ^0.3.15 on 2026jan15 7m old
-      installed: 0.3.16 on 2026mar10 5m old 🐣 Pre-1.0 version installed
-      current: 0.3.16 on 2026mar10 5m old
+      installed: 0.3.16 on 2026mar10 6m old 🐣 Pre-1.0 version installed
+      current: 0.3.16 on 2026mar10 6m old
       latest: 0.5.8 on 2026aug26 0m old
     downloads:
       weekly: 12,117,969
@@ -273,9 +273,9 @@ modules:
     from: site
     versions:
       declared: ^4.0.0 on 2025nov11 9m old 🏺 Declared release 6+ months earlier than installed
-      installed: 4.0.1 on 2026jun09 2m old
-      current: 4.0.1 on 2026jun09 2m old
-      latest: 4.0.1 on 2026jun09 2m old
+      installed: 4.0.1 on 2026jun09 3m old
+      current: 4.0.1 on 2026jun09 3m old
+      latest: 4.0.1 on 2026jun09 3m old
     downloads:
       weekly: 512,639
       on: 2026aug18.1523.58589
@@ -518,7 +518,7 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^2.23.8 on 2026mar10 5m old
+      declared: ^2.23.8 on 2026mar10 6m old
       installed: 2.23.10 on 2026jun24 2m old
       current: 2.24.0 on 2026aug28 0m old
       latest: 2.24.0 on 2026aug28 0m old
@@ -795,8 +795,8 @@ modules:
     versions:
       declared: ^4.33.0 on 2026feb19 6m old
       installed: 4.38.1 on 2026jun19 2m old
-      current: 4.41.1 on 2026aug26 0m old
-      latest: 4.41.1 on 2026aug26 0m old
+      current: 4.42.0 on 2026sep09 0m old
+      latest: 4.42.0 on 2026sep09 0m old
     downloads:
       weekly: 926,530
       on: 2026aug18.1523.45867
@@ -833,9 +833,9 @@ modules:
     from: site
     versions:
       declared: ^3.4.1 on 2026feb15 6m old
-      installed: 3.6.0 on 2026may10 3m old
-      current: 3.6.0 on 2026may10 3m old
-      latest: 3.6.0 on 2026may10 3m old
+      installed: 3.6.0 on 2026may10 4m old
+      current: 3.6.0 on 2026may10 4m old
+      latest: 3.6.0 on 2026may10 4m old
     downloads:
       weekly: 70,009,512
       on: 2026aug18.1524.24524
@@ -983,8 +983,8 @@ modules:
     versions:
       declared: ^4.63.0 on 2026feb05 7m old
       installed: 4.105.0 on 2026jun25 2m old
-      current: 4.129.1 on 2026sep07 0m old
-      latest: 4.129.1 on 2026sep07 0m old
+      current: 4.130.0 on 2026sep08 0m old
+      latest: 4.130.0 on 2026sep08 0m old
     downloads:
       weekly: 15,295,217
       on: 2026jul21.1759.35951

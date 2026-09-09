@@ -122,8 +122,8 @@ ledgerAdd, ledgerAddMany, recordDelay, recordHit,
 
 trailRecent, trailCount, trailGet, trailGetAny, trailAdd, trailAddMany,
 
-credentialPasswordGet, credentialPasswordSet, credentialPasswordRemove,
-credentialTotpGet, credentialTotpSet, credentialTotpRemove,
+credentialPasswordGet, credentialPasswordSet, credentialPasswordRemove, credentialPasswordVerify,
+credentialTotpGet, credentialTotpSet, credentialTotpRemove, credentialTotpVerify,
 credentialTotpEnroll1, credentialTotpEnroll2, credentialTotpClear,
 credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameGet, credentialNameCheck, credentialNameSet, credentialNameRemove,

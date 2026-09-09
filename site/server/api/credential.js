@@ -4,16 +4,14 @@ hasTextSame,
 validateName, checkAction, checkNumerals, validateEmailOrPhone,
 credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameCheck, credentialNameSet, credentialNameGet, credentialNameRemove,
-credentialPasswordSet, credentialPasswordGet, credentialPasswordRemove,
-credentialTotpGet, credentialTotpRemove,
+credentialPasswordSet, credentialPasswordGet, credentialPasswordRemove, credentialPasswordVerify,
+credentialTotpGet, credentialTotpRemove, credentialTotpVerify,
 credentialTotpEnroll1, credentialTotpEnroll2, credentialTotpClear,
 credentialWalletGet, credentialWalletProve1, credentialWalletProve2, credentialWalletRemove,
 credentialOauthRemove, credentialOauthGet, oauthProviders,
 credentialOtpSend, credentialOtpEnter, credentialOtpGet, credentialOtpRemove,
 credentialCloseAccount,
-totpValidate, totpIdentifier, totpConstants,
-checkTotpCode, checkTotpSecret, checkWallet, Data,
-trailCount, trailAdd, toTextOrBlank,
+totpIdentifier, checkWallet, Data, toTextOrBlank,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -84,15 +82,9 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 	// 🟠 name and password
 	} else if (action == 'SignIn.') {
-		let v = validateName(body.userIdentifier, Limit.name)
-		if (!v.ok) return {success: false, outcome: 'InvalidCredentials.'}
-		let nameRecord = await credentialNameGet({f0: v.f0})
-		if (!nameRecord) return {success: false, outcome: 'InvalidCredentials.'}
-		let password = await credentialPasswordGet({userTag: nameRecord.userTag})
-		if (!password || !hasTextSame(body.hash, password.hash)) {
-			return {success: false, outcome: 'InvalidCredentials.'}
-		}
-		await credentialBrowserSet({userTag: nameRecord.userTag, browserHash})
+		let user = await credentialPasswordVerify({raw: body.userIdentifier, hash: body.hash})//{userTag} on a match; false on an unknown name or a wrong hash, after the ledger row that shows a run of misses
+		if (!user) return {success: false, outcome: 'InvalidCredentials.'}//one answer for every miss, so a stranger can't learn which names exist
+		await credentialBrowserSet({userTag: user.userTag, browserHash})
 		await attachState(task, browserHash)
 
 	// 🟠 otp send
@@ -192,34 +184,8 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		//having previously enrolled, the user is signing in with totp
 		//here on the server, we validate the code
 		} else if (action == 'TotpValidate.') {
-			let {secret} = await credentialTotpGet({userTag: user.userTag})
-			if (!secret) toss('state')
-			checkTotpSecret(secret)
-			checkTotpCode(body.code)
-
-			//protect guesses on this secret from a brute force attack, which would succeed quickly
-			let n = await trailCount(
-				safefill`TOTP wrong guess: secret ${secret}`,
-				totpConstants.guardHorizon
-			)
-			if (n >= totpConstants.guardWrongGuesses) return {success: false, outcome: 'Later.'}
-
-			//validate the page's guess
-			let valid = await totpValidate({secret: Data({base32: secret}), code: body.code})
-			if (valid) {//guess at code from page is correct
-
-				log(`ttd november2025 🎃 user ${user.userTag} validated a code correctly, so we can let them in or sudo a transaction or something`)
-				await trailAdd(
-					safefill`TOTP right guess: secret ${secret}`//we can use this to detect if a user has a totp they haven't used in months, and maybe lost
-				)
-
-			} else {//guess at code from page is wrong
-
-				await trailAdd(
-					safefill`TOTP wrong guess: secret ${secret}`
-				)
-				return {success: false, outcome: 'Wrong.'}
-			}
+			let result = await credentialTotpVerify({userTag: user.userTag, code: body.code})//checks the code against her secret, behind the guard against brute force, and writes the ledger rows that show an attacker at the inner door
+			if (!result.ok) return {success: false, outcome: result.outcome}//Wrong., or Later. when the guard has tripped
 
 		// 🟠 wallet
 		//wallet proof step 1: page requests a nonce for SIWE (Sign-In with Ethereum, EIP-4361)

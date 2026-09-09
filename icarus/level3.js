@@ -10,7 +10,7 @@ Data, decryptData, hash_size, hasTextSame,
 replaceAll, replaceOne,
 hmacSign,
 checkHash, checkHashOrBlank, hashText, hashObject, given,
-totpEnroll, totpValidate, totpGenerate, checkTotpCode, checkTotpSecret,
+totpEnroll, totpValidate, totpGenerate, checkTotpCode, checkTotpSecret, totpConstants,
 otpGenerate, otpPrefix, prefix_alphabet,
 makePlain, makeObject, makeText, checkPlain,
 safefill, deindent,
@@ -200,24 +200,26 @@ export async function credentialOtpSend({v, provider, userTag}) {
 	checkTag(userTag)//the endpoint resolved the signed-in user and answered SignedOut. if there wasn't one; an otp flow requires a signed-in user from send through enter
 	checkAction(provider)//and the endpoint mapped the page's provider letter to a canonical tag like 'Amazon.' or 'Twilio.'; fail loud here, before anything reaches the lambda
 
+	let refuse = async (outcome) => { await credentialOtpMentioned({userTag, type: v.type, v, outcome}); return {success: false, outcome} }//how steps 0 and 1 say no: no code goes out, but we record the mention with why, since repeated mentions of a held address are the evidence a confused user keeps typing an address that isn't theirs, and a run of cooled ones is someone hammering an address with codes
+
 	// 📬 Step 0 Claim: Has another user already proven they control this address?
 	let holder = await credentialOtpHolder({type: v.type, f0: v.f0})
-	await credentialOtpMentioned({userTag, type: v.type, v})//record the mention either way; repeated mentions of a held address are the evidence a confused user keeps typing an address that isn't theirs
-	if (holder && holder.userTag != userTag) return {success: false, outcome: 'Held.'}//no code; a proven address can't be challenged by anyone else
+	if (holder && holder.userTag != userTag) return await refuse('Held.')//no code; a proven address can't be challenged by anyone else
 
 	// 📬 Step 1 Permit: Are we allowed to send another code to this address right now?
 	let now = Now()//we use trail to count, how many codes have we sent this address
 	let rows5 = await trailGet(safefill`OTP opened challenge: address ${v.f0}`, otpConstants.week)//in the last 5 days?
 	let rows1 = rows5.filter(row => row.row_tick >= now - otpConstants.day)//in the last 1 day?
 	if (rows1.length >= otpConstants.limitHard) {//too many! 24 codes in the last 24 hours!
-		return {success: false, outcome: 'CoolHard.'}//here, we enforce the "hard" limit, which is important to prevent an attacker from spamming their friend with useless unwanted codes
+		return await refuse('CoolHard.')//here, we enforce the "hard" limit, which is important to prevent an attacker from spamming their friend with useless unwanted codes
 	}
 	if (rows5.length >= otpConstants.limitSoft) {//we've sent 2+ codes to this address in the last 5 days
 		let cool = rows5[0].row_tick + otpConstants.minutes//tick when this address cools down; first row in array is most recent
 		if (now < cool) {
-			return {success: false, outcome: 'CoolSoft.'}//here, we enforce the "soft" limit, to slow the user down, encourage them to actually check their spam folder rather than spamming themselves another code
+			return await refuse('CoolSoft.')//here, we enforce the "soft" limit, to slow the user down, encourage them to actually check their spam folder rather than spamming themselves another code
 		}
 	}//if we make it here, we're allowed to send the address a new code
+	await credentialOtpMentioned({userTag, type: v.type, v})//record the mention, with no outcome because a code is going out
 	let strength = rows5.length < otpConstants.limitStrong ? otpConstants.short : otpConstants.standard//choose code length 4 or 6
 
 	// 📬 Step 2 Compose: Make a new random code and compose message text about it
@@ -254,8 +256,7 @@ export async function credentialOtpSend({v, provider, userTag}) {
 		{message: safefill`OTP answer: tag ${o.tag} answer ${o.answer}`},//the answer, as the hash of this message; enter hashes the guess into the same words and looks for a match
 	])
 	await credentialOtpChallenged({userTag, type: o.address.type, v: o.address, provider: o.provider, tag: o.tag})//the Challenged. row: the state of the flow, with the tag that names it and the provider that carried the code
-
-	if (sent) await ledgerAdd({action: o.address.type, event: 'Challenged.', provider: o.provider, userTag, hash: await hashText(o.address.f0), json: {tag: o.tag, ...sent}})//the whole task the lambda returned--provider, parameters, request, response, error, duration--kept as a queryable record of this third party send, with the tag so the record is found by the challenge it belongs to; the hash of the address gathers it with every other record about that address; last, after the challenge is fully recorded, so a refused note can't strand a code that's already in the user's inbox
+	if (sent) await ledgerAdd({action: o.address.type, event: 'Sent.', provider: o.provider, userTag, json: {tag: o.tag, address: _forms(o.address), ...sent}})//the dealing with the provider, a row of its own: the address in its three forms, the tag, which gathers the record with the challenge it belongs to, and the whole task the lambda returned--provider, parameters, request, response, error, duration--kept as a queryable record of this third party send. Every other ledger write in this file follows the line it records; this one waits until step 4 has recorded the whole challenge, because step 3 already put a code in the user's inbox, and a write that tossed here would leave her holding a code with no challenge to enter it against
 
 	return {success: true}//ttd january, if the lambda fails, but doesn't throw, we know there's no email waiting, but don't tell the page, or try a second provider; revisit this choice at some point
 }
@@ -268,6 +269,7 @@ export async function credentialOtpEnter({tag, guess, userTag}) {
 	let challenge = (await queryGet('credential_table', {user_tag: userTag, event_text: 'Challenged.', json: {tag}}))[0]
 	if (!challenge || Now() >= challenge.row_tick + otpConstants.expiration) return {success: false, outcome: 'Expired.'}//no live challenge: never hers, past its twenty minutes, replaced by a resend, or already closed; every way, lead the user to request a new code
 	let v = {ok: true, f0: challenge.f0_text, f1: challenge.f1_text, f2: challenge.f2_text, type: challenge.type_text}//the address, in the shape validateEmailOrPhone gave send
+	let forms = _forms(v)//the address in its three forms, on every ledger row enter writes
 
 	let rows = await trailGetAny([
 		safefill`OTP guessed wrong: tag ${tag}`,
@@ -283,6 +285,7 @@ export async function credentialOtpEnter({tag, guess, userTag}) {
 	let holder = await credentialOtpHolder({type: v.type, f0: v.f0})
 	if (holder && holder.userTag != userTag) {
 		await _otpHideChallenge({userTag, tag})//the challenge is dead no matter what the guess was; the address is spoken for
+		await ledgerAdd({action: v.type, event: 'Refused.', userTag, json: {address: forms, tag, guess, outcome: 'Held.'}})//an address two users reached for at once, and the one who lost the race, on the record with what they typed
 		return {success: false, outcome: 'Held.'}
 	}
 
@@ -300,10 +303,12 @@ export async function credentialOtpEnter({tag, guess, userTag}) {
 		if (lives <= 0) {// ✍🏻 expired by too many wrong guesses
 
 			await _otpHideChallenge({userTag, tag})//the trail counted the guesses; hiding the row is what ends the challenge
+			await ledgerAdd({action: v.type, event: 'Expired.', userTag, json: {address: forms, tag, guess}})//the fourth wrong guess closed the challenge
 			return {success: false, outcome: 'Expired.'}//treat exhausted guesses like expired; user remedy is the same: request a new code
 
 		} else {// ✍🏻 person can guess again
 
+			await ledgerAdd({action: v.type, event: 'Refused.', userTag, json: {address: forms, tag, guess, outcome: 'Wrong.', lives}})//the trail counts the guess; this row keeps what was typed and names the ip that typed it, which is what finds the attacker who learned alice's number and is guessing at her code
 			return {success: false, outcome: 'Wrong.', lives}//tell the person how many guesses they have left; may encourage them to type more carefully
 		}
 	}
@@ -384,10 +389,24 @@ export async function credentialPasswordSet({userTag, hash, cycles}) {
 	checkTag(userTag); checkInt(cycles, 1)//the note holds cycles as a real number, so the boundary checks it is one
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Password.', event_text: 'Proven.'})
 	await credentialSet({userTag, type: 'Password.', event: 'Proven.', hash, json: {cycles}})
+	await ledgerAdd({action: 'Password.', event: 'Proven.', userTag, json: {cycles}})//the ledger row after the credential row; the cycles ride, the hash never does
 }
 export async function credentialPasswordRemove({userTag}) {
 	checkTag(userTag)
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Password.', event_text: 'Proven.'})
+	await ledgerAdd({action: 'Password.', event: 'Removed.', userTag})
+}
+
+//sign in with a name and a password: find the name's user, and compare the hash the page computed to the one the password row holds
+//returns {userTag} on a match, or false on any miss; a miss against text shaped like a name writes the Password. Refused. row that shows a run of misses against one name, credential stuffing, with the ip of each try
+export async function credentialPasswordVerify({raw, hash}) {
+	checkText(raw); checkText(hash)//the name as the user typed it, and the hash the page computed from the password with the cycles it fetched first
+	let v = validateName(raw, Limit.name); if (!v.ok) return false//not a name at all, so not anyone's, and nothing worth a row
+	let nameRecord = await credentialNameGet({f0: v.f0})
+	let password = nameRecord ? await credentialPasswordGet({userTag: nameRecord.userTag}) : false
+	if (password && hasTextSame(hash, password.hash)) return {userTag: nameRecord.userTag}
+	await ledgerAdd({action: 'Password.', event: 'Refused.', json: {name: _forms(v), outcome: nameRecord ? 'WrongPassword.' : 'UnknownName.'}})//no user is signed in at the browser that asked, so user_tag_text stays blank and the name asked for rides json; the page hears only InvalidCredentials., so a stranger can't learn which names exist, but the ledger keeps the difference
+	return false
 }
 
 //                    _            _   _       _   _        _         
@@ -422,10 +441,39 @@ export async function credentialTotpSet({userTag, secret}) {
 	checkTag(userTag)
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Totp.', event_text: 'Proven.'})
 	await credentialSet({userTag, type: 'Totp.', event: 'Proven.', json: {secret}})
+	await ledgerAdd({action: 'Totp.', event: 'Proven.', userTag})//the enrollment, on the record; the secret never rides the ledger
 }
 export async function credentialTotpRemove({userTag}) {
 	checkTag(userTag)
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Totp.', event_text: 'Proven.'})
+	await ledgerAdd({action: 'Totp.', event: 'Removed.', userTag})
+}
+
+//an enrolled user typed the six digits their app shows, to sign in or before something that wants a second factor; check the code against their secret
+//returns {ok: true} on a right code, or {ok: false, outcome} with Wrong. for a wrong one and Later. when the guard has seen too many wrong ones inside its horizon; tosses if the user isn't enrolled, because the page ghosts this control when she isn't
+export async function credentialTotpVerify({userTag, code}) {
+	checkTag(userTag); checkTotpCode(code)
+	let {secret} = await _totpRead({userTag})
+	if (!secret) toss('state', {userTag})
+	checkTotpSecret(secret)
+
+	//protect guesses on this secret from a brute force attack, which would succeed quickly
+	let n = await trailCount(safefill`TOTP wrong guess: secret ${secret}`, totpConstants.guardHorizon)
+	if (n >= totpConstants.guardWrongGuesses) {
+		await ledgerAdd({action: 'Totp.', event: 'Refused.', userTag, json: {outcome: 'Later.', code}})//the guard tripped: whoever this is has the password and is hammering the inner door, and this row names the ip of the try that tripped it
+		return {ok: false, outcome: 'Later.'}
+	}
+
+	let valid = await totpValidate({secret: Data({base32: secret}), code})
+	if (valid) {//guess at code from page is correct
+		await trailAdd(safefill`TOTP right guess: secret ${secret}`)//we can use this to detect if a user has a totp they haven't used in months, and maybe lost
+		await ledgerAdd({action: 'Totp.', event: 'Proven.', userTag})//she proved control of the app again
+		return {ok: true}
+	} else {//guess at code from page is wrong
+		await trailAdd(safefill`TOTP wrong guess: secret ${secret}`)
+		await ledgerAdd({action: 'Totp.', event: 'Refused.', userTag, json: {outcome: 'Wrong.', code}})//the trail counts the guess for the guard; the ledger names the ip that made it
+		return {ok: false, outcome: 'Wrong.'}
+	}
 }
 
 /*
@@ -461,6 +509,7 @@ export async function credentialTotpEnroll1({userTag}) {
 	let enrollment = await totpEnroll({brand: Key('domain, public'), account: await _totpEnrollAccount(userTag), label: true})
 	await _totpHideStarts({userTag})//one enrollment in flight per user, so starting again replaces an abandoned start
 	await credentialSet({userTag, type: 'Totp.', event: 'Challenged.', json: {secret: enrollment.secret}})//the start, with row_tick as its clock
+	await ledgerAdd({action: 'Totp.', event: 'Challenged.', userTag})//the start, on the record, without its secret
 	return {uri: enrollment.uri, identifier: enrollment.identifier}
 }
 
@@ -486,6 +535,7 @@ export async function credentialTotpEnroll2({userTag, code}) {
 export async function credentialTotpClear({userTag}) {
 	checkTag(userTag)
 	await _totpHideStarts({userTag})
+	await ledgerAdd({action: 'Totp.', event: 'Cancelled.', userTag})//one row per cancel the page sends, a stale tab's second one included: the row records what was asked, not what changed
 }
 
 //                    _            _   _       _                 _ _      _   
@@ -560,10 +610,15 @@ export async function credentialWalletRefusal({userTag, address}) {
 //nonce is the challenge that proved it, kept in the row's json so the proof points at its history; blank for a proof set directly, as the tests do
 export async function credentialWalletSet({userTag, address, nonce = ''}) {
 	checkTag(userTag); checkText(address); checkTagOrBlank(nonce)
-	let outcome = await credentialWalletRefusal({userTag, address})
-	if (outcome) return {ok: false, outcome}
 	let v = await validateWallet(address); if (!v.ok) toss('use', {address})
+	let forms = _forms(v)//the address in its three forms, on every ledger row this writes
+	let outcome = await credentialWalletRefusal({userTag, address})
+	if (outcome) {
+		await ledgerAdd({action: 'Ethereum.', event: 'Refused.', userTag, json: {address: forms, outcome, nonce: nonce || undefined}})//every refusal, the contested WalletClaimedElsewhere. and the user's own WalletAlreadyProven. and WalletFull. alike, from this one line; || undefined makes a blank nonce an absent key
+		return {ok: false, outcome}
+	}
 	await credentialSet({userTag, type: 'Ethereum.', event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2, json: nonce ? {nonce} : {}})//an absent key is the blank of a property
+	await ledgerAdd({action: 'Ethereum.', event: 'Proven.', userTag, json: {address: forms, nonce: nonce || undefined}})
 	return {ok: true}
 }
 
@@ -571,6 +626,7 @@ export async function credentialWalletRemove({userTag, f0}) {//hide this user's 
 	checkTag(userTag); checkText(f0)
 	let v = await validateWallet(f0); if (!v.ok) toss('use', {f0})
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: v.f0, event_text: 'Proven.'})
+	await ledgerAdd({action: 'Ethereum.', event: 'Removed.', userTag, json: {address: _forms(v)}})
 }
 
 /*
@@ -603,13 +659,19 @@ export async function credentialWalletProve1({userTag, address, connector}) {
 	if (!walletConstants.connectors.includes(connector)) toss('use', {connector})//the page names one of the two connectors it has; anything else is a broken caller
 	let v = await validateWallet(address); if (!v.ok) toss('use', {address})//the page connected a real wallet, so anything else is a broken caller
 
+	let forms = _forms(v)//the address in its three forms, on every ledger row this writes
 	await credentialSet({userTag, type: 'Ethereum.', event: 'Mentioned.', f0: v.f0, f1: v.f1, f2: v.f2})//the mention: this user mentioned this address, recorded before we decide, so a refused attempt still leaves its trace
+	await ledgerAdd({action: 'Ethereum.', event: 'Mentioned.', userTag, json: {address: forms, connector}})
 
 	let outcome = await credentialWalletRefusal({userTag, address})
-	if (outcome) return {outcome}//refuse at the start, so the user is never sent to their wallet to sign for a proof we would decline at the end
+	if (outcome) {//refuse at the start, so the user is never sent to their wallet to sign for a proof we would decline at the end
+		await ledgerAdd({action: 'Ethereum.', event: 'Refused.', userTag, json: {address: forms, outcome, connector}})
+		return {outcome}
+	}
 
 	let nonce = Tag()//21 base62 characters; the page embeds this in the SIWE message it asks the wallet to sign
 	await credentialSet({userTag, type: 'Ethereum.', event: 'Challenged.', f0: v.f0, f1: v.f1, f2: v.f2, json: {nonce, connector}})//the challenge: we challenged this address with this nonce, row_tick is its clock, and the connector is how she connected
+	await ledgerAdd({action: 'Ethereum.', event: 'Challenged.', userTag, json: {address: forms, nonce, connector}})
 	return {nonce}
 }
 
@@ -620,16 +682,18 @@ export async function credentialWalletProve2({userTag, address, message, signatu
 	checkText(message)//the SIWE-formatted message the page constructed and signed
 	checkText(signature)//0x followed by 130 or 132 base16 characters
 	let v = await validateWallet(address); if (!v.ok) toss('use', {address})//the endpoint hands us the checksummed face; the rows hold the lowercase f0
+	let forms = _forms(v)//the address in its three forms, on every ledger row this writes
+	let refuse = async (outcome) => { await ledgerAdd({action: 'Ethereum.', event: 'Refused.', userTag, json: {address: forms, outcome}}); return {ok: false, outcome} }//a refusal touches no table, writes its ledger row, and answers the caller; a bad signature or a nonce we never issued is somebody pushing on the flow, the third kind of record
 
 	//viem arrives through the dynamic import helper rather than a static import at the top of this file: these modules are big, static imports of them have broken the cloudflare deploy before, and the grid tests name this function, which keeps whatever it references alive in every bundle a tree shaker looks at
 	let {viem, viem_chains, viem_siwe, viem_utils} = await viemDynamicImport()
 
 	//find the challenge this message answers, by the nonce inside it
 	let parsed = viem_siwe.parseSiweMessage(message)//never throws: garbage parses to an empty object, and an edited message to whatever was typed into it
-	if (!hasTag(parsed.nonce)) return {ok: false, outcome: 'BadSignature.'}//the boundary check on text the page sent, so a broken message gets this answer rather than a toss from the query helper below; the lookup is what proves the nonce is ours
+	if (!hasTag(parsed.nonce)) return await refuse('BadSignature.')//the boundary check on text the page sent, so a broken message gets this answer rather than a toss from the query helper below; the lookup is what proves the nonce is ours
 	let challenges = await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: v.f0, event_text: 'Challenged.', json: {nonce: parsed.nonce}})//this user's challenge for this address under this nonce; by the nonce rather than newest, so two tabs proving one address each find their own
 	let challenge = challenges[0]
-	if (!challenge || Now() >= challenge.row_tick + Limit.expirationUser) return {ok: false, outcome: 'Expired.'}//no live challenge: a nonce we never issued, or issued to someone else, or past its twenty minutes, or already spent; every way, start over
+	if (!challenge || Now() >= challenge.row_tick + Limit.expirationUser) return await refuse('Expired.')//no live challenge: a nonce we never issued, or issued to someone else, or past its twenty minutes, or already spent; every way, start over
 	let nonce = challenge.json.nonce//the row's, never the parsed one: validateSiweMessage skips its nonce check when handed undefined
 
 	let now = new Date()//one reading of the clock for both steps below, so a slow check can't judge the message by two different moments
@@ -637,7 +701,7 @@ export async function credentialWalletProve2({userTag, address, message, signatu
 	// 🔑 step 1, offline: does the message say what it should, and did this address sign it?
 	//validateSiweMessage enforces that the message was signed for our origin, around our nonce, by the address being claimed, and inside the lifetime the message declares for itself--defense in depth alongside the row's own clock
 	if (!viem_siwe.validateSiweMessage({message: parsed, domain: originDomain(), nonce, address, time: now})) {
-		return {ok: false, outcome: 'BadSignature.'}//the message itself is wrong, and no wallet of any kind could make that right
+		return await refuse('BadSignature.')//the message itself is wrong, and no wallet of any kind could make that right
 	}
 	let valid = await viem_utils.verifyMessage({address, message, signature})//recover the signer from the signature; an ordinary key-backed wallet--very nearly every wallet--proves itself right here, touching no network at all
 
@@ -645,14 +709,19 @@ export async function credentialWalletProve2({userTag, address, message, signatu
 	//only that code can settle it, and it lives on the blockchain. this is the one path that needs a chain provider, and it's a corner of a corner: a minority of users bring wallets, and a minority of those are contracts
 	if (!valid && !isInSimulationMode()) {
 		let client = viem.createPublicClient({chain: viem_chains.mainnet, transport: viem.http(Key('alchemy url, secret'))})//secret server only Alchemy key with no Origin header requirements, separate from the Origin restricted client side key
+		let t = Now()//the dealing with the chain provider gets a row of its own, timed, so a query by provider shows how alchemy has been answering
+		let request = {message, signature, domain: originDomain(), nonce, address, time: now.toISOString()}//what we hand the chain provider, kept whole on that row
+		let chainId
 		try {
-			await client.getChainId()//ask something trivial first: verifySiweMessage answers false whether the contract declined or we simply couldn't reach it, and those two owe the user completely different words
+			chainId = await client.getChainId()//ask something trivial first: verifySiweMessage answers false whether the contract declined or we simply couldn't reach it, and those two owe the user completely different words
 		} catch (e) {
-			return {ok: false, outcome: 'Later.'}//our provider is down, so we can't judge a contract wallet at all; the remedy is to wait and try again, which is what Later. means everywhere it appears
+			await ledgerAdd({action: 'Ethereum.', event: 'Asked.', provider: 'Alchemy.', userTag, json: {address: forms, request, duration: Now() - t, ...makePlain({error: e})}})//the provider didn't answer, with the error as it came
+			return await refuse('Later.')//our provider is down, so we can't judge a contract wallet at all; the remedy is to wait and try again, which is what Later. means everywhere it appears
 		}
 		valid = await viem_siwe.verifySiweMessage(client, {message, signature, domain: originDomain(), nonce, address, time: now})//EIP-1271: ask the wallet's own contract whether it accepts this signature
+		await ledgerAdd({action: 'Ethereum.', event: 'Asked.', provider: 'Alchemy.', userTag, json: {address: forms, request, response: {chainId, valid}, duration: Now() - t}})//what we handed the provider, what came back, and how long the round trip took
 	}
-	if (!valid) return {ok: false, outcome: 'BadSignature.'}
+	if (!valid) return await refuse('BadSignature.')
 
 	//the signature checks out: spend the nonce, then save the proof
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: v.f0, event_text: 'Challenged.', json: {nonce}})//this challenge alone, so a captured signature replayed later finds its nonce gone; hidden before the write, so a failure between leaves a spent nonce and no proof, and she starts over with a fresh one
@@ -714,6 +783,7 @@ all oauth rows share type Oauth. the provider like Discord. or Google. rides in 
 export async function credentialOauthChallenge({userTag, provider}) {//record we're sending the user into a third party oauth flow
 	checkTag(userTag); checkAction(provider)
 	await credentialSet({userTag, type: 'Oauth.', event: 'Challenged.', json: {provider}})//the challenge, so we can see how long users take or if for whatever reason they don't make it through in significant numbers
+	await ledgerAdd({action: 'Oauth.', event: 'Challenged.', provider, userTag})
 }
 
 /*
@@ -725,7 +795,7 @@ caller is expected to have run credentialOauthParse on the proof and pass the re
 */
 export async function credentialOauthSet({userTag, provider, proof, identifier, handle, name, email}) {
 	checkTag(userTag); checkAction(provider); checkText(identifier)
-	let json = {identifier, handle: handle ?? undefined, name: name ?? undefined, email: email?.f2, proof}//what the ledger row carries about the link, the provider in its own column: the facts the credential row keeps, the email's face, and the provider's whole proof; ?? undefined turns a provider's null into an absent key, the blank of a property
+	let json = {identifier, handle: handle ?? undefined, name: name ?? undefined, email: email ? _forms(email) : undefined, proof}//what the ledger row carries about the link, the provider in its own column: the facts the credential row keeps, the email in its three forms when the provider gave one, and the provider's whole proof; ?? undefined turns a provider's null into an absent key, the blank of a property
 	let refuse = async (outcome) => { await ledgerAdd({action: 'Oauth.', event: 'Refused.', provider, userTag, json: {...json, outcome}}); return {ok: false, outcome} }//a refusal touches no table, writes its ledger row, and answers the caller
 
 	//check 1: this user already has SOME account linked for this provider
@@ -761,6 +831,7 @@ export async function credentialOauthSet({userTag, provider, proof, identifier, 
 export async function credentialOauthRemove({userTag, provider}) {
 	checkTag(userTag); checkAction(provider)
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Oauth.', json: {provider}, event_text: 'Proven.'})
+	await ledgerAdd({action: 'Oauth.', event: 'Removed.', provider, userTag})
 }
 export async function credentialOauthGet({userTag}) {//list this user's linked oauth credentials across providers we currently support
 	checkTag(userTag)
@@ -794,14 +865,16 @@ export async function credentialOtpHolder({type, f0}) {//which user, if any, has
 	return false//nobody has proven it; mentions and challenges don't reserve an address for anyone
 }
 
-export async function credentialOtpMentioned({userTag, type, v}) {//record a user mentioned an address
-	checkTag(userTag)
+export async function credentialOtpMentioned({userTag, type, v, outcome = ''}) {//record a user mentioned an address; outcome is why the send refused to go on, Held., CoolSoft., or CoolHard., or blank when a code went out
+	checkTag(userTag); checkActionOrBlank(outcome)
 	await credentialSet({userTag, type, event: 'Mentioned.', f0: v.f0, f1: v.f1, f2: v.f2})
+	await ledgerAdd({action: type, event: 'Mentioned.', userTag, json: {address: _forms(v), outcome: outcome || undefined}})//who typed which address, and when a code didn't go out, why: the evidence a held or hammered address leaves; || undefined makes a blank outcome an absent key
 }
 
 export async function credentialOtpChallenged({userTag, type, v, provider, tag = ''}) {//record we used provider to send a code to address v; tag names the challenge, and a row without one, like a fixture in the tests, never reads as live
 	checkTag(userTag); checkAction(provider); checkTagOrBlank(tag)//provider is a canonical tag like 'Amazon.' or 'Twilio.'; the endpoint maps the page's single letter before any of this
 	await credentialSet({userTag, type, event: 'Challenged.', f0: v.f0, f1: v.f1, f2: v.f2, json: tag ? {provider, tag} : {provider}})//which provider carried the code, and which challenge this is; an absent key is the blank of a property
+	await ledgerAdd({action: type, event: 'Challenged.', provider, userTag, json: {address: _forms(v), tag: tag || undefined}})//the state of the flow, on the record, with the provider that carried the code in the column every row names a third party in; the dealing with that provider, what we asked and what they answered, is the send's own Sent. row
 }
 
 export async function credentialOtpProven({userTag, type, v, tag = ''}) {//the user typed the correct code; save proof they control this address, naming the challenge that proved it so the proof points at its history
@@ -811,6 +884,7 @@ export async function credentialOtpProven({userTag, type, v, tag = ''}) {//the u
 	let challenges = await queryGet('credential_table', {user_tag: userTag, type_text: type, f0_text: v.f0, event_text: 'Challenged.'})
 	if (!challenges.length) return false//no visible start of this flow; the user removed the address mid-challenge, and a late correct code shouldn't resurrect it
 	await credentialSet({userTag, type, event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2, json: tag ? {tag} : {}})
+	await ledgerAdd({action: type, event: 'Proven.', userTag, json: {address: _forms(v), tag: tag || undefined}})
 	return true
 }
 
@@ -836,6 +910,7 @@ export async function credentialOtpGet({userTag, type}) {//a user's addresses of
 export async function credentialOtpRemove({userTag, type, f0}) {//hide every event row about this address, proven or pending
 	checkTag(userTag); checkText(f0)
 	await queryHide('credential_table', {user_tag: userTag, type_text: type, f0_text: f0})
+	await ledgerAdd({action: type, event: 'Removed.', userTag, json: {address: {f0}}})//one row for the remove, whatever it hid, with the one form remove is given; the rows it ended are the ones above it about this address
 }
 
 //                    _            _   _       _   _                                     
@@ -856,10 +931,12 @@ export async function credentialBrowserGet({browserHash}) {//what user, if any, 
 export async function credentialBrowserSet({userTag, browserHash}) {//sign this user in at this browser
 	checkTag(userTag); checkHash(browserHash)
 	await credentialSet({userTag, type: 'Browser.', event: 'Proven.', hash: browserHash})
+	await ledgerAdd({action: 'Browser.', event: 'Proven.', userTag, hash: browserHash})//hash_text is the browser signed in, so the session is found by browser as well as by user; browser_hash is the browser that asked, the same one in production
 }
 export async function credentialBrowserRemove({userTag}) {//sign this user out everywhere
 	checkTag(userTag)
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Browser.', event_text: 'Proven.'})
+	await ledgerAdd({action: 'Browser.', event: 'Removed.', userTag})//one row for the user, with no hash, because every session ends at once; the sessions it ended are the Proven. rows above it in her history
 }
 
 //                    _            _   _       _                              
@@ -900,6 +977,7 @@ export async function credentialNameSet({userTag, raw1, raw2}) {
 	if (!v) return false
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Name.', event_text: 'Proven.'})
 	await credentialSet({userTag, type: 'Name.', event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2})
+	await ledgerAdd({action: 'Name.', event: 'Proven.', userTag, json: {name: _forms(v)}})//the three forms taken; the name this replaced, if any, is the earlier row
 	return v
 }
 
@@ -922,6 +1000,7 @@ export async function credentialNameCheck({//returns false taken or not valid, o
 export async function credentialNameRemove({userTag}) {
 	checkTag(userTag)
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Name.', event_text: 'Proven.'})
+	await ledgerAdd({action: 'Name.', event: 'Removed.', userTag})
 }
 
 //                    _            _   _       _        _                                                   _
@@ -935,6 +1014,7 @@ export async function credentialNameRemove({userTag}) {
 export async function credentialCloseAccount({userTag}) {
 	checkTag(userTag)
 	await queryHide('credential_table', {user_tag: userTag, event_text: 'Proven.'})//hide active credentials across all types in one shot; Challenged. rows stay visible as audit
+	await ledgerAdd({action: 'Account.', event: 'Closed.', userTag})//one row for the closure; what the account held is the Proven. and Removed. rows above it
 }
 
 
@@ -1145,6 +1225,8 @@ CREATE UNIQUE INDEX ledger7 ON ledger_table (hash_text) WHERE action_text = 'Hit
 ALTER TABLE ledger_table ENABLE ROW LEVEL SECURITY;
 `)
 
+function _forms(v) { return {f0: v.f0, f1: v.f1, f2: v.f2} }//the three forms of an address or a name, the way a ledger row's json carries them under a key named for what they are, like address or name; an address is not a hash, so it rides json whole and hash_text stays blank
+//the words in use. action_text is the subject: a credential type spelled as credential_table spells it, Browser., Name., Password., Totp., Ethereum., Oauth., Email., or Phone.; Account. for the account as a whole; Hit. for a visit. event_text is the verb: Mentioned., Challenged., Proven., Refused., Cancelled., Removed., Expired., and Closed. say what happened to the user's data, and Sent. and Asked. say we dealt with a provider. provider_text names that third party wherever one is in the row, the provider that carried a code, the provider an oauth account is with, or the chain provider we asked, and stays blank when none was. Not an enumeration to enforce: checkActionOrBlank checks the shape of a tag and not a list, and each site chooses the same word when it is the same thing, and the word the flow around it already uses
 export async function ledgerAdd({action, event, provider, browserHash, userTag, hash, json}) { return await ledgerAddMany([{action, event, provider, browserHash, userTag, hash, json}]) }
 export async function ledgerAddMany(a) {//keep a lasting record of something that happened, durable and queryable in our own database; every element in a is its own complete record
 	let now = Now()

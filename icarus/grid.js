@@ -3,7 +3,7 @@
 //only the monorepo root's test.js imports this file; the icarus barrel, site, and net23 have no knowledge of it, so test closures never ride in a production bundle or the lambda artifact
 
 import {
-Data, Tag, Time, defined, hashText, hashObject, makeObject, makeText, random32, totpGenerate,
+Data, Tag, Time, defined, hashText, hashObject, makeObject, makeText, random32, totpGenerate, totpConstants,
 } from './core.js'
 import {
 Now, ageNow, enterSimulationMode, isExpired, isInSimulationMode, ok, runTests, hasText,
@@ -23,8 +23,8 @@ ledgerAdd, ledgerAddMany, otpConstants, recordHit,
 trailAdd, trailAddMany, trailCount, trailGet, trailGetAny, trailRecent,
 credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameGet, credentialNameSet, credentialNameRemove, credentialNameCheck,
-credentialPasswordGet, credentialPasswordSet, credentialPasswordRemove,
-credentialTotpGet, credentialTotpSet, credentialTotpRemove, credentialTotpClear,
+credentialPasswordGet, credentialPasswordSet, credentialPasswordRemove, credentialPasswordVerify,
+credentialTotpGet, credentialTotpSet, credentialTotpRemove, credentialTotpClear, credentialTotpVerify,
 credentialTotpEnroll1, credentialTotpEnroll2,
 credentialWalletGet, credentialWalletSet, credentialWalletRemove, credentialWalletHolder, credentialWalletRefusal,
 credentialWalletProve1, credentialWalletProve2, validateWallet,
@@ -40,6 +40,10 @@ function grid(f) { _grid.push(f) }
 
 //the otp tests read each code from the inbox the simulation database carries, which send fills in place of handing the message to the lambda, the way a person reads the code from their email or texts
 async function _otpCode(f0) { return (await getDatabase()).inbox.findLast(m => m.f0 == f0) }//the newest message to an address: {type, f0, tag, answer}
+async function _ledger(userTag, action, event) {//a user's ledger rows of one action, and one event when given, newest first; how a flow test reads what a flow wrote beside its credential rows
+	let cells = {user_tag_text: userTag, action_text: action}; if (event) cells.event_text = event
+	return await queryGet('ledger_table', cells)
+}
 async function _otpLive(userTag, type) { return (await credentialOtpGet({userTag, type})).challenges }//the user's live challenges of one type, as the snapshot projects them
 
 grid(async () => {//otp: sanity check
@@ -108,6 +112,12 @@ grid(async () => {//otp: 3 wrong guesses then correct works; 4 wrong exhausts co
 	ok((await credentialOtpEnter({tag: m4.tag, guess: '104', userTag})).outcome == 'Expired.')//fourth wrong is expired, and hides the challenge
 	ok((await credentialOtpEnter({tag: m4.tag, guess: m4.answer, userTag})).outcome == 'Expired.')//fifth correct rejected: the challenge is gone
 	ok((await _otpLive(userTag, 'Email.')).length == 0)
+
+	let wrong = await _ledger(userTag, 'Email.', 'Refused.')//every wrong guess left a row naming the browser that made it, with the guesses left
+	ok(wrong.length == 6 && wrong.every(r => r.json.outcome == 'Wrong.' && hasText(r.json.guess) && hasText(r.json.address.f0)) && wrong.filter(r => r.json.tag == m4.tag).length == 3 && wrong.filter(r => r.json.lives == 1).length == 2)
+	let expired = await _ledger(userTag, 'Email.', 'Expired.')//the fourth wrong guess closed the challenge; the fifth try found nothing live and wrote nothing
+	ok(expired.length == 1 && expired[0].json.tag == m4.tag)
+	ok((await _ledger(userTag, 'Email.', 'Proven.')).length == 1)//the code that was right
 })
 grid(async () => {//otp: replacement code kills previous code to same address
 	let userTag = Tag()
@@ -153,6 +163,9 @@ grid(async () => {//otp: hard limit of 24 codes per address per day
 	ok(r.success)//message 25 is allowed now
 	r = await send()
 	ok(!r.success); ok(r.outcome == 'CoolHard.')//but not message 26
+
+	let mentions = (await queryGet('ledger_table', {action_text: 'Email.', event_text: 'Mentioned.'})).filter(r => r.json.address.f0 == v.f0)//by the address in json, since every send came from a different user
+	ok(mentions.length == 27 && mentions.filter(r => r.json.outcome == 'CoolHard.').length == 2 && mentions.filter(r => !r.json.outcome).length == 25)//the two refusals are on the record with why, beside the sends that went out
 })
 
 grid(async () => {//otp: soft limit requires 1 minute between codes after first 2 codes in past 5 days
@@ -169,6 +182,9 @@ grid(async () => {//otp: soft limit requires 1 minute between codes after first 
 	ageNow((5*Time.day)-(30*Time.second))//first 2 codes fell over horizon, third is 30s from edge
 	ok((await send()).success)//fourth code goes out
 	ok((await send()).outcome == 'CoolSoft.')//fifth needs another minute
+
+	let mentions = (await queryGet('ledger_table', {action_text: 'Email.', event_text: 'Mentioned.'})).filter(r => r.json.address.f0 == v.f0)
+	ok(mentions.length == 7 && mentions.filter(r => r.json.outcome == 'CoolSoft.').length == 3)//every refusal on the record, the same way as the hard limit's
 })
 grid(async () => {//otp: first code to an address in 5d window is short (4 digits), then standard (6), then short again
 	let v = validateEmailOrPhone(Tag() + '@example.com')
@@ -199,6 +215,29 @@ grid(async () => {//password: set, change, verify single active, remove
 	ok(rows.length == 1)//only one active password after change
 	await credentialPasswordRemove({userTag})
 	ok((await credentialPasswordGet({userTag})) == false)//now gone
+
+	let ledger = await _ledger(userTag, 'Password.')//three rows: the first set, the change, the remove; the cycles ride and the hash never does
+	ok(ledger.length == 3 && ledger.filter(r => r.event_text == 'Removed.').length == 1 && ledger.some(r => r.json.cycles == 100) && ledger.some(r => r.json.cycles == 200))
+	ok(ledger.every(r => r.hash_text == '' && !('hash' in r.json)))
+})
+grid(async () => {//password: sign-in verifies a name and a hash, and every miss leaves a row with the name tried and why, so credential stuffing shows
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag()
+	let hash = random32()
+	await credentialNameSet({userTag, raw1: 'Verify-Me', raw2: 'Verify Me'})
+	await credentialPasswordSet({userTag, hash, cycles: 100})
+
+	ok((await credentialPasswordVerify({raw: 'verify-me', hash})).userTag == userTag)//the right hash for the name, in any spelling of the name
+	ok((await credentialPasswordVerify({raw: 'Verify-Me', hash: random32()})) == false)//the wrong hash
+	ok((await credentialPasswordVerify({raw: 'Nobody-Here', hash})) == false)//a name nobody holds
+	ok((await credentialPasswordVerify({raw: '!!', hash})) == false)//not a name at all
+
+	let misses = await queryGet('ledger_table', {action_text: 'Password.', event_text: 'Refused.'})
+	misses = misses.filter(r => r.json.name.f0 == 'verify-me' || r.json.name.f0 == 'nobody-here')//this test's rows among any earlier run's
+	ok(misses.length == 2 && misses.find(r => r.json.outcome == 'UnknownName.').json.name.f0 == 'nobody-here' && misses.find(r => r.json.outcome == 'WrongPassword.').json.name.f0 == 'verify-me')//two rows, each with the name tried and why; the invalid name wrote nothing
+	ok(misses.every(r => r.user_tag_text == '' && r.browser_hash == gridDoor.browserHash))//nobody is signed in at a browser that is trying to sign in, so the user is blank and the browser is the door's
+	ok((await _ledger(userTag, 'Password.', 'Refused.')).length == 0)//and the miss against her name is not filed under her, since she didn't make it
 })
 grid(async () => {//totp: set, re-enroll, verify single active, remove
 	let {clear} = await getDatabase()
@@ -213,6 +252,31 @@ grid(async () => {//totp: set, re-enroll, verify single active, remove
 	ok(rows.length == 1)//only one active totp after re-enroll
 	await credentialTotpRemove({userTag})
 	ok((await credentialTotpGet({userTag})).secret == '')//now gone
+
+	let ledger = await _ledger(userTag, 'Totp.')//two enrollments and the remove, and no secret in any of them
+	ok(ledger.length == 3 && ledger.filter(r => r.event_text == 'Proven.').length == 2 && ledger.filter(r => r.event_text == 'Removed.').length == 1)
+	ok(ledger.every(r => makeText(r.json) == '{}'))
+})
+grid(async () => {//totp verify: a right code proves the app again, a wrong one is refused, and the guard trips after too many wrong ones in a day, each on the record with the browser that tried
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag()
+	await credentialTotpEnroll1({userTag})
+	let secret = (await _totpStarts(userTag))[0].json.secret//a fresh secret, so the trail's count of wrong guesses starts at zero for this test
+	let code = await totpGenerate({secret: Data({base32: secret}), now: Now()})
+	ok((await credentialTotpEnroll2({userTag, code})).ok)
+
+	ok((await credentialTotpVerify({userTag, code})).ok)//the code her app shows
+	let wrong = await credentialTotpVerify({userTag, code: code == '000000' ? '000001' : '000000'})
+	ok(!wrong.ok && wrong.outcome == 'Wrong.')
+	for (let i = 1; i < totpConstants.guardWrongGuesses; i++) ok((await credentialTotpVerify({userTag, code: code == '000000' ? '000001' : '000000'})).outcome == 'Wrong.')//up to the guard's count
+	ok((await credentialTotpVerify({userTag, code})).outcome == 'Later.')//and past it, even the right code waits; somebody with the password is hammering the inner door
+
+	let refused = await _ledger(userTag, 'Totp.', 'Refused.')
+	ok(refused.length == totpConstants.guardWrongGuesses + 1 && refused.filter(r => r.json.outcome == 'Later.').length == 1 && refused.filter(r => r.json.outcome == 'Wrong.').length == totpConstants.guardWrongGuesses && refused.every(r => hasText(r.json.code)))//every wrong guess, and the guard tripping, each its own row
+	ok((await _ledger(userTag, 'Totp.', 'Proven.')).length == 2)//the enrollment and the one right code
+	let tossed = false; try { await credentialTotpVerify({userTag: Tag(), code}) } catch (e) { tossed = true }
+	ok(tossed)//a user who isn't enrolled can't be here; the page ghosts the control
 })
 async function _totpStarts(userTag) {//a user's visible starts, newest first, at most one; the enroll tests read the secret from the row the way her authenticator app holds it from the qr code
 	return await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.', event_text: 'Challenged.'})
@@ -237,6 +301,9 @@ grid(async () => {//totp enroll: the whole flow, secret to saved enrollment, wit
 	ok(snapshot.secret == secret && snapshot.enrollment == false)//step 2 checked the code and saved the enrollment, and nothing is in flight
 	ok((await _totpStarts(userTag)).length == 0)//the finished start left the visible table
 	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 2)//and stays in it, hidden, beside the proven row
+
+	let ledger = await _ledger(userTag, 'Totp.')//the start and the enrollment; the secret rides the credential row and never the ledger
+	ok(ledger.length == 2 && ledger.some(r => r.event_text == 'Challenged.') && ledger.some(r => r.event_text == 'Proven.') && ledger.every(r => !('secret' in r.json)))
 })
 grid(async () => {//totp enroll: cancel hides the start, a wrong code is refused, a restart leaves one visible start, and enrolling twice is a mistake by the page above us
 	let {clear} = await getDatabase()
@@ -267,6 +334,10 @@ grid(async () => {//totp enroll: cancel hides the start, a wrong code is refused
 
 	let code = await totpGenerate({secret: Data({base32: secret}), now: Now()})
 	ok((await credentialTotpEnroll2({userTag, code})).ok)
+
+	ok((await _ledger(userTag, 'Totp.', 'Cancelled.')).length == 2)//both cancels, the stale tab's too, since each records what was asked
+	ok((await _ledger(userTag, 'Totp.', 'Refused.')).length == 0)//a wrong first code during enrollment writes nothing: nobody else is involved
+	ok((await _ledger(userTag, 'Totp.', 'Challenged.')).length == 3)//three starts
 
 	//now enrolled, both steps refuse to start over; the page ghosts these controls, so reaching here means it was wrong about the state
 	let tossed
@@ -340,6 +411,12 @@ grid(async () => {//wallet: a user proves two addresses, and the third is refuse
 	let mine = await credentialWalletGet({userTag})
 	ok(mine.length == 1 && mine[0] == wallet2)//removal takes only the address named, leaving the other proof alone
 	ok((await credentialWalletSet({userTag, address: wallet3})).ok)//and the freed slot accepts the new wallet
+
+	let ledger = await _ledger(userTag, 'Ethereum.')//three proofs, one refusal, one remove, every row carrying its address in json and no hash
+	ok(ledger.length == 5 && ledger.filter(r => r.event_text == 'Proven.').length == 3 && ledger.filter(r => r.event_text == 'Removed.').length == 1)
+	let refused = ledger.find(r => r.event_text == 'Refused.')
+	ok(refused.json.outcome == 'WalletFull.' && refused.json.address.f0 == wallet3.toLowerCase() && refused.hash_text == '')//the user's own refusal, from the same line that writes the contested one
+	ok(ledger.find(r => r.event_text == 'Removed.').json.address.f0 == wallet1.toLowerCase())
 })
 grid(async () => {//wallet: one address, one holder — alice and bob are married and share a wallet, but hold separate accounts here
 	let {clear} = await getDatabase()
@@ -421,6 +498,7 @@ grid(async () => {//wallet prove: the whole flow, nonce to saved proof, with a r
 	await clear('credential_table')
 	let userTag = Tag()
 	let account = await _walletTestAccount('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d')
+	let f0 = account.address.toLowerCase()//the matching form, on every ledger row about this address
 	const challenges = async () => await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event_text: 'Challenged.'})//her visible challenges
 
 	let prove = await credentialWalletProve1({userTag, address: account.address, connector: 'Injected.'})//step 1: the page asks for a nonce
@@ -434,6 +512,12 @@ grid(async () => {//wallet prove: the whole flow, nonce to saved proof, with a r
 	ok((await credentialWalletGet({userTag}))[0] == account.address)//step 2 checked the signature and saved the proof
 	ok((await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event_text: 'Proven.'}))[0].json.nonce == prove.nonce)//and the proof names the challenge that proved it
 	ok((await challenges()).length == 0)//and spent the nonce: the challenge is hidden
+
+	let ledger = await _ledger(userTag, 'Ethereum.')//the three rows the flow leaves: the mention, the challenge, and the proof
+	let mentioned = ledger.find(r => r.event_text == 'Mentioned.'), challenged = ledger.find(r => r.event_text == 'Challenged.'), proven = ledger.find(r => r.event_text == 'Proven.')
+	ok(ledger.length == 3 && mentioned && challenged && proven && ledger.every(r => r.json.address.f0 == f0 && r.hash_text == ''))
+	ok(mentioned.json.connector == 'Injected.' && challenged.json.nonce == prove.nonce && challenged.json.connector == 'Injected.' && proven.json.nonce == prove.nonce)
+	ok(!ledger.some(r => r.event_text == 'Asked.'))//an ordinary wallet proves itself offline, so the chain was never asked
 })
 grid(async () => {//wallet prove: the challenge belongs to the user and the address step 1 was for, and lives twenty minutes
 	let {clear} = await getDatabase()
@@ -477,6 +561,9 @@ grid(async () => {//wallet prove: only the connected wallet's own signature, ove
 	await credentialWalletRemove({userTag, f0: account.address})//she removes the wallet a minute later
 	ok((await submit(signed)).outcome == 'Expired.')//and the captured signature can't bring it back; the nonce was spent at the first proof
 	ok((await credentialWalletGet({userTag})).length == 0)
+
+	let refused = await _ledger(userTag, 'Ethereum.', 'Refused.')//every push on the flow is on the record: a forged signature, a nonce we never issued, text that isn't a message, and the spent nonce twice
+	ok(refused.length == 5 && refused.filter(r => r.json.outcome == 'BadSignature.').length == 2 && refused.filter(r => r.json.outcome == 'Expired.').length == 3)
 })
 grid(async () => {//wallet prove: two tabs proving the same address each hold their own nonce, and the slower one meets the rules
 	let {clear} = await getDatabase()
@@ -513,6 +600,12 @@ grid(async () => {//wallet prove: a refused flow never mints a nonce, so the wal
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: wallet3.toLowerCase()})//mentions write the triad now, f0 in the matching lowercase form
 	ok(rows.length == 1 && rows[0].event_text == 'Mentioned.')//the mention is on the record, and no challenge row, because we never challenged
 	ok(rows[0].f1_text == wallet3 && rows[0].f2_text == wallet3)//and the mention carries the whole triad: the backfill's blank-f1 guard trusts that every row the new code writes is complete
+
+	let f0 = wallet3.toLowerCase()
+	let ledger = (await _ledger(userTag, 'Ethereum.')).filter(r => r.json.address.f0 == f0)//the mention and the refusal, under the address that was refused
+	let refused = ledger.find(r => r.event_text == 'Refused.')
+	ok(ledger.length == 2 && ledger.some(r => r.event_text == 'Mentioned.') && refused.json.outcome == 'WalletFull.' && refused.json.connector == 'WalletConnect.')
+	ok((await _ledger(userTag, 'Ethereum.', 'Challenged.')).length == 0)//no challenge, because no nonce was minted
 })
 
 grid(async () => {//oauth: link multiple providers, re-link single active per provider, remove
@@ -526,6 +619,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	await credentialOauthChallenge({userTag, provider: 'Discord.'})
 	let challenged = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event_text: 'Challenged.', json: {provider: 'Discord.'}})
 	ok(challenged.length == 1)
+	ok((await _ledger(userTag, 'Oauth.', 'Challenged.'))[0].provider_text == 'Discord.')//and its ledger row beside it, the provider in its own column
 
 	//link Discord; verify row fields via get+find
 	let aliceEmail = validateEmail('alice@example.com')
@@ -536,9 +630,9 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	let discordRow = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', json: {provider: 'Discord.'}, event_text: 'Proven.'}))[0]
 	ok(discordRow.f0_text == 'alice@example.com' && discordRow.f2_text == 'alice@example.com')//validated email filled into f0/1/2
 	ok(discordRow.json.proof.account.a == 1)//the note preserves the auth.js slice as real nested json
-	let ledger = await queryGet('ledger_table', {user_tag_text: userTag, action_text: 'Oauth.'})//the ledger row beside the credential row, from the same values
-	ok(ledger.length == 1 && ledger[0].event_text == 'Proven.' && ledger[0].provider_text == 'Discord.' && ledger[0].browser_hash == gridDoor.browserHash)
-	ok(ledger[0].json.identifier == 'd123' && ledger[0].json.handle == 'alice_d' && ledger[0].json.email == 'alice@example.com' && ledger[0].json.proof.account.a == 1)//the link's facts and the whole proof, so the ledger tells the story once the credential row is gone
+	let ledger = await _ledger(userTag, 'Oauth.', 'Proven.')//the ledger row beside the credential row, from the same values
+	ok(ledger.length == 1 && ledger[0].provider_text == 'Discord.' && ledger[0].browser_hash == gridDoor.browserHash)
+	ok(ledger[0].json.identifier == 'd123' && ledger[0].json.handle == 'alice_d' && ledger[0].json.email.f2 == 'alice@example.com' && ledger[0].json.proof.account.a == 1)//the link's facts and the whole proof, so the ledger tells the story once the credential row is gone
 
 	//link Google too; get returns both
 	await credentialOauthSet({userTag, provider: 'Google.', identifier: 'g456', handle: 'alice@gmail.com', name: 'Alice G.', email: aliceEmailObj})
@@ -604,6 +698,8 @@ grid(async () => {//oauth: cross-user providerId uniqueness — one provider ide
 	ok((await credentialOauthSet({userTag: aliceTag, provider: 'Discord.', identifier: 'alice_own_id', handle: 'alice_other'})).ok)
 	ok((await credentialOauthGet({userTag: aliceTag})).find(o => o.provider == 'Discord.').identifier == 'alice_own_id')
 
+	ok((await _ledger(aliceTag, 'Oauth.', 'Removed.')).length == 1 && (await _ledger(aliceTag, 'Oauth.', 'Removed.'))[0].provider_text == 'Discord.')//her release is on the record
+
 	//cross-provider corner: two providers can hand out the same identifier string to two different cold3 users without colliding, because the uniqueness key is (provider, identifier) compound, not identifier alone
 	let charlieTag = Tag(), daveTag = Tag()
 	ok((await credentialOauthSet({userTag: charlieTag, provider: 'Google.', identifier: 'collision_id', handle: 'charlie_g'})).ok)
@@ -625,6 +721,12 @@ grid(async () => {//browser: sign out removes all sessions for one user
 	await credentialBrowserRemove({userTag})//sign out everywhere
 	ok((await credentialBrowserGet({browserHash: browser1})) == false)//both sessions gone
 	ok((await credentialBrowserGet({browserHash: browser2})) == false)
+
+	let ledger = await _ledger(userTag, 'Browser.')//the two sign-ins and the sign-out
+	let removed = ledger.filter(r => r.event_text == 'Removed.'), proven = ledger.filter(r => r.event_text == 'Proven.')
+	ok(ledger.length == 3 && removed.length == 1 && removed[0].hash_text == '')//one row for the sign-out, with no hash, since every session ended at once; the sessions it ended are the sign-ins beside it
+	ok(proven.length == 2 && proven.some(r => r.hash_text == browser1) && proven.some(r => r.hash_text == browser2))//each sign-in names the browser signed in, so a session is found by browser as well as by user
+	ok(ledger.every(r => r.browser_hash == gridDoor.browserHash))//and the browser that asked is the door's, on every row
 })
 grid(async () => {//browser: multi-user flow, sign out doesn't affect other users
 	let user1 = Tag()
@@ -766,6 +868,9 @@ grid(async () => {//name: change frees old name for others (the Bob story)
 	let v2 = await credentialNameSet({userTag: user1, raw1: 'Super-Bob', raw2: 'Super Bob'})//user1 changes to "super-bob"
 	ok(v2.ok && v2.f0 == 'super-bob')
 	ok((await credentialNameGet({userTag: user1})).name.f0 == 'super-bob')//user1 now has super-bob
+	let ledger = await _ledger(user1, 'Name.')//the first name and the change; the name a change replaced is the earlier row
+	ok(ledger.length == 2 && ledger.some(r => r.json.name.f0 == 'bob') && ledger.find(r => r.json.name.f0 == 'super-bob').json.name.f2 == 'Super Bob' && ledger.every(r => r.hash_text == ''))
+	ok((await _ledger(user2, 'Name.')).length == 0)//user2's refused try wrote nothing: names are public, so a taken name is no signal
 	let v3 = await credentialNameSet({userTag: user2, raw1: 'Bob', raw2: 'Bob'})//user2 can now take "bob"
 	ok(v3.ok && v3.f0 == 'bob')
 	ok((await credentialNameGet({userTag: user1})).name.f0 == 'super-bob')//both have correct names
@@ -822,6 +927,9 @@ grid(async () => {//close account: user signs up, closes account, can't sign bac
 	ok((await credentialNameGet({userTag})) == false)//name gone
 	ok((await credentialPasswordGet({userTag})) == false)//password gone
 	ok((await credentialBrowserGet({browserHash})) == false)//signed out
+	let closed = await _ledger(userTag, 'Account.')//one row for the closure; what the account held is the three Proven. rows above it
+	ok(closed.length == 1 && closed[0].event_text == 'Closed.')
+	ok((await queryGet('ledger_table', {user_tag_text: userTag, event_text: 'Removed.'})).length == 0)//and no Removed. row per credential
 
 	//name is now available for another user
 	let user2 = Tag()
@@ -939,6 +1047,13 @@ grid(async () => {//otp into credential: the full flow writes lifecycle rows for
 	ok((await credentialOtpEnter({tag: m.tag, guess: m.answer, userTag})).success)
 	got = await credentialOtpGet({userTag, type: 'Email.'})
 	ok(got.addresses[0].event == 'Proven.' && got.challenges.length == 0)//the correct code promoted the address to proven, and nothing is in flight
+
+	let ledger = await _ledger(userTag, 'Email.')//the three rows the flow leaves: the mention, the challenge, and the proof
+	let mentioned = ledger.find(r => r.event_text == 'Mentioned.'), challenged = ledger.find(r => r.event_text == 'Challenged.'), proven = ledger.find(r => r.event_text == 'Proven.')
+	ok(ledger.every(r => r.json.address.f0 == v.f0 && r.hash_text == ''))//the address rides every row in json, and the hash margin stays blank, since an address is not a hash
+	ok(ledger.length == 3 && mentioned && challenged && proven)
+	ok(!('outcome' in mentioned.json) && challenged.json.tag == m.tag && challenged.provider_text == 'Amazon.' && proven.json.tag == m.tag)//a code went out, so the mention names no outcome; the challenge names the provider that carried it in its own column
+	ok((await _ledger(userTag, 'Email.', 'Sent.')).length == 0)//in simulation no message goes to the lambda, so there is no dealing with a provider to record
 })
 
 grid(async () => {//otp into credential: a challenge belongs to the user who started it
@@ -979,6 +1094,8 @@ grid(async () => {//otp into credential: a held address can't be challenged or c
 	let his = await credentialOtpGet({userTag: alfred, type: 'Email.'})
 	ok(his.challenges.length == 0)//no challenge was created
 	ok(his.addresses[0].event == 'Mentioned.')//the mention is on the record
+	let mention = (await _ledger(alfred, 'Email.'))[0]//and so is why nothing went out: the third kind of record, an address one user holds and another keeps typing
+	ok(mention.event_text == 'Mentioned.' && mention.json.outcome == 'Held.' && mention.json.address.f0 == v.f0)
 
 	//alice herself can still request another code to her own address, for a future sudo check or new device
 	ok((await credentialOtpSend({v, provider: 'Amazon.', userTag: alice})).success)
@@ -1001,6 +1118,8 @@ grid(async () => {//otp into credential: two users' challenges to one address co
 	let late = await credentialOtpEnter({tag: mb.tag, guess: mb.answer, userTag: bob})//bob's code is still live, and correct
 	ok(!late.success && late.outcome == 'Held.')//but the address found its holder while his code was in flight; the enter-time check closes the race the send-time check can't see
 	ok((await _otpLive(bob, 'Email.')).length == 0)//and his dead challenge is hidden
+	let refused = await _ledger(bob, 'Email.', 'Refused.')//the lost race is on the record under bob, with the challenge it closed
+	ok(refused.length == 1 && refused[0].json.outcome == 'Held.' && refused[0].json.tag == mb.tag)
 })
 
 grid(async () => {//otp into credential: removing an address mid-challenge takes the challenge with it, so a late correct code finds nothing
@@ -1010,6 +1129,7 @@ grid(async () => {//otp into credential: removing an address mid-challenge takes
 	let v = validateEmailOrPhone(Tag() + '@example.com')
 	await credentialOtpSend({v, provider: 'Amazon.', userTag})
 	await credentialOtpRemove({userTag, type: 'Email.', f0: v.f0})//she removes the address while the challenge is still live; remove hides every row about the address, the challenge included
+	ok((await _ledger(userTag, 'Email.', 'Removed.'))[0].json.address.f0 == v.f0)//one row for the remove, naming the address
 	let m = await _otpCode(v.f0)
 	ok((await credentialOtpEnter({tag: m.tag, guess: m.answer, userTag})).outcome == 'Expired.')//the code itself is still correct, but the challenge is gone with the address
 	ok((await credentialOtpGet({userTag, type: 'Email.'})).addresses.length == 0)//and no proof was saved; the removed address stays removed
@@ -1443,7 +1563,7 @@ async function setupTestDatabase() {//build ephemeral in-memory PostgreSQL, wrap
 	let database = {from(table) { return new FakeSupabaseQueryBuilder(p, table) }}//our adapter which matches the parts of the supabase api our code here uses
 	setTestDatabase({
 		context: 'Test.', database, pglite: p,
-		clear: async (table) => await p.exec(`DELETE FROM ${table}`),
+		clear: async (table) => await p.exec(`TRUNCATE ${table}`),//truncate rather than delete: a delete leaves every row behind as a dead tuple with its dead index entries, and after the flow tests have written thousands of rows the planner tests below see bloated indexes, tie on cost, and pick the wrong one
 		inbox: [],//what credentialOtpSend would have handed the lambda, one entry per code, for the otp tests to read the code from
 	})
 }

@@ -41,6 +41,20 @@ Four distinct things stack up here, and naming them separately dissolves most co
 
 The compact truth underneath all of it: there is one language, SQL, and one full-power transport, the wire protocol. The application's path deliberately wraps both in a narrow REST grammar that can't say anything dangerous; the dashboard and the CLI hand you the full language directly; Docker appears only when a version-exact compiled tool has to do the talking; and PGlite is the whole server folded into a library so tests can skip every network hop. Migration files, dashboard SQL, pg_dump output, the SQL() registry, and what PostgREST generates from your JavaScript — all of it converges on the same SQL arriving at the same engine.
 
+## We await every write
+
+Server code here awaits every call it makes to the database and to a third party, and never lets one keep running while the response goes back. This is policy rather than a judgment at each site, and the reason is that a request which has returned is a request whose environment can disappear. A promise still in flight at that moment does not finish, does not retry, and leaves nothing behind to say it ever existed.
+
+Both platforms end a request the same way for our purposes. Cloudflare tears the isolate down once it has sent the response, and offers ctx.waitUntil to extend it. Lambda freezes the environment the instant the handler resolves, has no equivalent at all, and may thaw that frozen work much later inside a different request, or never. We use neither escape hatch. icarus runs on both, so a rule resting on one vendor's mechanism is a rule only half the code can follow, and we have already watched waitUntil fail to wait often enough to build a system here for not relying on it.
+
+That system is the promise parking lot in level2. keepPromise pushes work into a module-level array, and every door awaits the array before returning, racing it against four seconds. It works, it was difficult to build, and it has never been entirely trustworthy: requests share the array, a route wearing no door drains it only by luck, and the race abandons whatever is still running when the four seconds are up. Only the Datadog family rides it now, dog and logAudit and logAlert, and the smaller dog removes it.
+
+So we state the cost and accept it. An awaited write to Supabase runs on the order of a hundred milliseconds, and a path that writes twice pays it twice. We take that in exchange for a rule that holds on both platforms, needs no thought at the call site, and survives the next change in how either vendor treats work after a response. The paths paying it are human-paced, where somebody has just typed a code, signed a message, or chosen a name, and the alternative is a record that exists only when the infrastructure feels like finishing it.
+
+The rule covers server code. Neither platform tears a page down this way, and a store that leaves a fetch running while the reader looks at the page is doing its job.
+
+One consequence is worth naming, because it is why the rule matters more than it used to. A row we write before an outside call is how we find out that the call never came back: when a provider hangs until the platform kills us, that row is the only thing that survives. An unawaited row would not even be that.
+
 ## How a table is shaped
 
 Three margin columns start every table, even one with no use for them: `row_tag`, a globally unique tag and the primary key, though we never query on it; `row_tick`, set when the row is added; and `hide`, 0 to start and nonzero to leave the row out of ordinary use. Beneath them, example_table carries one column of each remaining kind, which makes it the working reference as well as the sandbox grid tests write in.

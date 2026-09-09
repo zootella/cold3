@@ -1088,17 +1088,6 @@ function handleLambdaCorsResponse(headers) {
 	headers['Access-Control-Allow-Origin'] = originApex()//every response needs this header, not just the preflight
 }
 
-//      _                        _                 _   _                 
-//   __| | ___   ___  _ __    __| |_   _ _ __ __ _| |_(_) ___  _ __  ___ 
-//  / _` |/ _ \ / _ \| '__|  / _` | | | | '__/ _` | __| |/ _ \| '_ \/ __|
-// | (_| | (_) | (_) | |    | (_| | |_| | | | (_| | |_| | (_) | | | \__ \
-//  \__,_|\___/ \___/|_|     \__,_|\__,_|_|  \__,_|\__|_|\___/|_| |_|___/
-//                                                                      
-
-const durationEnvironment = 30*Time.second//cloudflare workers only run 30 seconds, and we've configured lambdas to be the same
-const durationFetch = 20*Time.second//have axios give up on a fetch after 20 seconds
-const durationWait = 4*Time.second//only wait 4 seconds for parallel promises to finish before returning the web response, which can cause cloudflare and amazon to tear down the execution environment
-
 //      _                                              _               
 //   __| | ___   ___  _ __   _ __  _ __ ___  _ __ ___ (_)___  ___  ___ 
 //  / _` |/ _ \ / _ \| '__| | '_ \| '__/ _ \| '_ ` _ \| / __|/ _ \/ __|
@@ -1106,17 +1095,19 @@ const durationWait = 4*Time.second//only wait 4 seconds for parallel promises to
 //  \__,_|\___/ \___/|_|    | .__/|_|  \___/|_| |_| |_|_|___/\___||___/
 //                          |_|                                        
 /*
-_doorPromises, below, is a module scoped variable
-cloudflare guarantees a fresh execution environment for every request, but lambda does not
-if a lambda gets busy, multiple requests may come into the same running environment,
-and this array will fill up with promises from different requests
-but, this is ok, because individual promises will still finish if they can,
-and the 4s timeout means no request will get stuck for longer than that
+Work that outlives the response, and why we run our own version of it
 
-_doorPromises contains promises, like fetching to datadog to store a log, that run in parallel while we handle the request
-we won't need the results, but do need to wait for them all to finish before returning the web result
-also, if one fails, we want to know about that
+A request sometimes starts work whose result nobody is waiting for, a log going to Datadog above all. The tempting shape is to fire it off and return the response at once, and both platforms punish that shape in their own way. Cloudflare tears the isolate down once it has sent the response. Lambda freezes the execution environment the instant the handler resolves, and the frozen promise either thaws much later inside a different invocation, with confusing results, or never runs at all. Either way the work vanishes, and it vanishes quietly, which is the worst way to lose it.
+
+Cloudflare offers a way out, ctx.waitUntil, which holds the isolate open until a promise we hand it settles. We don't use it, for two reasons that each stand alone. We watched it fail to wait often enough that we stopped trusting it. And icarus is one library running on both platforms, where Lambda has nothing equivalent to offer, so a rule only half our code can follow is not a rule.
+
+Hence this section. keepPromise pushes a promise into _doorPromises, a module-scoped array, and every door awaits that array before it returns, racing it against four seconds so no request hangs waiting on a sluggish log. The module scope is the point rather than an accident: nothing threads through the call stack, so code anywhere can park work without the door above it knowing.
+
+Know the weaknesses before leaning on this. Cloudflare gives every request a fresh isolate, but Lambda does not, so a busy function fills this one array from several requests at once, and whichever door shuts first sweeps up everybody's promises and races them against its own four seconds. A route wearing no door never drains the array at all, and work we park there survives only if some later doored request happens along while the environment still lives. The race simply abandons whatever is still running when it ends. So a Datadog line can go missing here, which we accept, because Datadog is all this carries now: dog, logAudit, and logAlert.
+
+The direction is away from all of it. Every write to the database already awaits, deliberately, and an awaited round trip to Supabase costs about a hundred milliseconds. We would rather pay that on the paths that mutate than trust an environment we don't control to finish what we started, and when the logging apparatus comes down this section goes with it. The trade we are choosing, and it is worth saying plainly rather than discovering later: a hundred milliseconds here and there, in exchange for simplicity and for knowing that what we wrote actually landed.
 */
+const durationWait = 4*Time.second//only wait 4 seconds for parallel promises to finish before returning the web response, which can cause cloudflare and amazon to tear down the execution environment
 let _doorPromises = []
 export function keepPromise(p) {//instead of awaiting p, add it here to keep going in parallel, and keep the promise of waiting for it at the end
 	_doorPromises.push(p
