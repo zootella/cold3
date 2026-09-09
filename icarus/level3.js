@@ -1188,6 +1188,18 @@ Our own code speaks last. wrapper_hash is the build that wrote the row, row_tick
 
 None of this is labeled in the data. The schema does not sort cells into trusted and reported, and no row carries a bag per source, because a label on every cell would repeat what this essay says once and get in the way of reading the row. The cell is the label.
 */
+
+/*
+hash_text and tag_text: the two margins that gather rows together
+
+Two cells sit side by side for one reason. When a row is about a single nameable thing, hash_text holds the hash of that thing. When a row is part of a single operation, tag_text holds the tag of that operation. Both stay blank the rest of the time. Everything else a row has to say rides in json, and these two are the exception because a margin is what you can search and filter on quickly: each carries its own index, and a lookup by either hands back the matching rows newest first without reading the table.
+
+That is the whole argument for them, and it is the limit of it too. Neither cell is a slot waiting to be filled. Hashing something merely so hash_text has a value is likely wrong: an address is not a hash, and hashing it here would put a second copy of a fact json already carries into a cell that means something else. A blank is a real answer, and it says this row is about no single thing, or belongs to no single operation. Fill either cell when the row genuinely has one, and leave it alone when it doesn't.
+
+The tag earns its column on a shape that keeps recurring. A function writes a row, then tries something it cannot be sure of, reaching a third-party API most often, and then afterwards, if there is an afterwards, writes a second row saying how it went. Without a tag the second row would have to repeat enough of the first to be recognizable as the same story, and a reader would be left matching them up by their timestamps. So the function mints one tag for the call and puts it on every row that call writes. The rows then find each other by their matching tags, the second row carries only what is new, and the pair reads in order. A first row with no second is a finding of its own: the call never came back.
+
+Neither column promises uniqueness across the table, and the duplicates are the point. Many rows share one hash deliberately, because everything we know about one address is exactly what a query by that hash should return, and every row of one operation carries that operation's tag by design. One narrow exception stands: ledger7 is unique on hash_text for Hit. rows alone, which is how a visit records once an hour, and it is partial precisely so rows of every other action stay free to repeat.
+*/
 SQL(`
 -- durable audit in our own database: what happened, who was here, and everything else about it
 -- we write here constantly and query rarely; a staff member reads these to reconstruct a story long after the moment
@@ -1210,6 +1222,7 @@ CREATE TABLE ledger_table (
 	provider_text  TEXT      NOT NULL,  -- the third party we dealt with, like "Twilio."; blank when we dealt with none
 
 	hash_text      TEXT      NOT NULL,  -- the hash of the one thing this row is about, like an address, gathering every record about it, or for Hit. the hash of the hour and the visit that ledger7 keeps unique; blank when the row is about no such thing
+	tag_text       TEXT      NOT NULL DEFAULT '',  -- the tag of the one operation this row is part of, gathering every row that one call wrote; blank when the row is part of no such operation. the default is scaffolding until the deploy fills the cell, and the contraction drops it
 
 	json           JSONB     NOT NULL   -- everything else about what happened; {} when the columns say it all
 );
@@ -1221,13 +1234,14 @@ CREATE INDEX ledger4 ON ledger_table (hash_text,     row_tick DESC) WHERE hide =
 CREATE INDEX ledger5 ON ledger_table (event_text,    row_tick DESC) WHERE hide = 0 AND event_text != '';  -- everything of one kind, newest first
 CREATE INDEX ledger6 ON ledger_table (provider_text, row_tick DESC) WHERE hide = 0 AND provider_text != '';  -- everything around one third party, newest first
 CREATE UNIQUE INDEX ledger7 ON ledger_table (hash_text) WHERE action_text = 'Hit.';  -- one Hit. per browser per hour: partial, because rows of other actions share a hash on purpose, and recordHit's plain insert lets it raise 23505 to say the visit is already recorded
+CREATE INDEX ledger8 ON ledger_table (tag_text,      row_tick DESC) WHERE hide = 0 AND tag_text != '';  -- every row one operation wrote, newest first
 
 ALTER TABLE ledger_table ENABLE ROW LEVEL SECURITY;
 `)
 
 function _forms(v) { return {f0: v.f0, f1: v.f1, f2: v.f2} }//the three forms of an address or a name, the way a ledger row's json carries them under a key named for what they are, like address or name; an address is not a hash, so it rides json whole and hash_text stays blank
 //the words in use. action_text is the subject: a credential type spelled as credential_table spells it, Browser., Name., Password., Totp., Ethereum., Oauth., Email., or Phone.; Account. for the account as a whole; Hit. for a visit. event_text is the verb: Mentioned., Challenged., Proven., Refused., Cancelled., Removed., Expired., and Closed. say what happened to the user's data, and Sent. and Asked. say we dealt with a provider. provider_text names that third party wherever one is in the row, the provider that carried a code, the provider an oauth account is with, or the chain provider we asked, and stays blank when none was. Not an enumeration to enforce: checkActionOrBlank checks the shape of a tag and not a list, and each site chooses the same word when it is the same thing, and the word the flow around it already uses
-export async function ledgerAdd({action, event, provider, browserHash, userTag, hash, json}) { return await ledgerAddMany([{action, event, provider, browserHash, userTag, hash, json}]) }
+export async function ledgerAdd({action, event, provider, browserHash, userTag, hash, tag, json}) { return await ledgerAddMany([{action, event, provider, browserHash, userTag, hash, tag, json}]) }
 export async function ledgerAddMany(a) {//keep a lasting record of something that happened, durable and queryable in our own database; every element in a is its own complete record
 	let now = Now()
 	let rows = a.map(e => _ledgerRow(e, now))
@@ -1243,11 +1257,12 @@ function _ledgerRow(e, now) {//check one record and shape it as a ledger_table r
 		browserHash = door.browserHash,//the browser that was here, from the door like the ip and origin, unless the record names one itself, as a hit does with the hash it was given
 		userTag = '',//the user, or blank if nobody's identified
 		hash = '',//the row's one meaningful hash when what happened was about something we can name that way, so every record about that thing is an indexed lookup; blank when it wasn't
+		tag = '',//the operation this row belongs to, one call that changed something from the outside in, so every row that call wrote gathers under one filter; blank when the row belongs to none
 		json = {},//everything else about what happened, kept as data a later reader can query and read back
 		browser = door.browser,//the browser's account of itself, the door's agent string unless the record extends it, as a hit does with what the page said about its graphics
 	} = e
 	checkAction(action); checkActionOrBlank(event); checkActionOrBlank(provider); checkHash(browserHash)
-	checkTagOrBlank(userTag); checkHashOrBlank(hash); checkPlain(json); checkPlain(browser)
+	checkTagOrBlank(userTag); checkHashOrBlank(hash); checkTagOrBlank(tag); checkPlain(json); checkPlain(browser)
 	checkTextOrBlank(door.ip); checkTextOrBlank(door.origin); checkPlain(door.geography); checkPlain(door.browser)//what the ledger requires of the door above it, beyond the browser hash checked above: a worker door always has all four, a lambda door has none, and a test door is whatever the test made
 	return {
 		row_tick: now,
@@ -1261,6 +1276,7 @@ function _ledgerRow(e, now) {//check one record and shape it as a ledger_table r
 		event_text: event,
 		provider_text: provider,
 		hash_text: hash,
+		tag_text: tag,
 		json,
 	}
 }

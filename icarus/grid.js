@@ -1317,6 +1317,33 @@ grid(async () => {//ledger: the hash margin gathers every record about one thing
 	ok(tossed)//the cell holds a hash or the blank, nothing else
 })
 
+grid(async () => {//ledger: the tag margin gathers every row one operation wrote, whatever each row was about, and the planner reaches them through ledger8
+	let {clear, pglite} = await getDatabase()
+	await clear('ledger_table')
+	let browserHash = await hashText('a browser')
+	let operation = Tag(), later = Tag()//the tag of one call that changed something, minted where that call begins
+
+	await ledgerAddMany([//one send writes three rows--the mention, the dealing with the provider, and the challenge--and they are one operation
+		{action: 'Email.', event: 'Mentioned.',  browserHash, tag: operation, json: {n: 1}},
+		{action: 'Email.', event: 'Sent.',       browserHash, tag: operation, provider: 'Twilio.', json: {n: 2}},
+		{action: 'Email.', event: 'Challenged.', browserHash, tag: operation, provider: 'Twilio.', json: {n: 3}},
+		{action: 'Email.', event: 'Proven.',     browserHash, tag: later,     json: {n: 4}},//the code she typed later, a call of its own
+		{action: 'Email.', event: 'Removed.',    browserHash},//a row from before the tag existed, or from a path that names no operation
+	])
+	let mine = await queryGet('ledger_table', {tag_text: operation})
+	ok(mine.length == 3 && mine.every(r => r.tag_text == operation))//the whole send under one filter, three verbs of one action
+	ok((await queryGet('ledger_table', {tag_text: later})).length == 1)//and the later call stays its own
+	ok((await queryGet('ledger_table', {action_text: 'Email.', event_text: 'Removed.'}))[0].tag_text == '')//blank when the row belongs to no operation
+
+	await pglite.query('SET enable_seqscan = off')//a handful of rows would always seq scan, so forcing index consideration is what proves the partial predicate is provable from the filter
+	let plan = (await pglite.query(`EXPLAIN SELECT * FROM ledger_table WHERE hide = 0 AND tag_text = '${operation}' ORDER BY row_tick DESC`)).rows.map(r => Object.values(r)[0]).join('\n')
+	await pglite.query('SET enable_seqscan = on')
+	ok(plan.includes('ledger8'))//postgres proves tag_text = a nonblank constant implies tag_text != '', so the partial index serves the lookup
+
+	let tossed = false; try { await ledgerAdd({action: 'Email.', browserHash, tag: 'not a tag'}) } catch (e) { tossed = true }
+	ok(tossed)//the cell holds a tag or the blank, nothing else
+})
+
 grid(async () => {//envelope: the security checks in openEnvelope, which totp, otp, wallet, media, and the worker to lambda door all lean on; the test lives down here rather than beside the envelope functions because grid() itself must be defined first
 	let browserHash = random32()
 	let envelope = await sealEnvelope('TestEnvelope.', Time.minute, {message: 'hello', browserHash})
