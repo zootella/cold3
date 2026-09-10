@@ -35,7 +35,7 @@ credentialCloseAccount,
 } from './level3.js'
 
 let _grid = []//grid test functions collected by grid(); run by runDatabaseTests()
-const gridDoor = {origin: 'https://example.com', ip: '203.0.113.7', geography: {country: 'US', city: 'Akron'}, browser: {agent: 'Mozilla/5.0'}, browserHash: 'VNTDBXDMLKBBT7YICWOHGYE2DKIM7HND55KNAMXXFOWUYAK6CXJQ'}//the door grid tests run below, holding the four cells and the browser hash ledger writes read from a door, so they find the request they belong to
+const gridDoor = {origin: 'https://example.com', ip: '203.0.113.7', geography: {country: 'US', city: 'Akron'}, browser: {agent: 'Mozilla/5.0'}, browserHash: 'VNTDBXDMLKBBT7YICWOHGYE2DKIM7HND55KNAMXXFOWUYAK6CXJQ', tag: Tag()}//the door grid tests run below, holding the four cells, the browser hash, and the tag that ledger writes read from a door, so every row they write names the request it came from
 function grid(f) { _grid.push(f) }
 
 //the otp tests read each code from the inbox the simulation database carries, which send fills in place of handing the message to the lambda, the way a person reads the code from their email or texts
@@ -1317,31 +1317,56 @@ grid(async () => {//ledger: the hash margin gathers every record about one thing
 	ok(tossed)//the cell holds a hash or the blank, nothing else
 })
 
-grid(async () => {//ledger: the tag margin gathers every row one operation wrote, whatever each row was about, and the planner reaches them through ledger8
+grid(async () => {//ledger: the tag margin holds a row's own singular tag, the way the hash margin holds its own singular hash, and the planner reaches them through ledger8
 	let {clear, pglite} = await getDatabase()
 	await clear('ledger_table')
 	let browserHash = await hashText('a browser')
-	let operation = Tag(), later = Tag()//the tag of one call that changed something, minted where that call begins
+	let challenge = Tag(), other = Tag()//the tag of the one thing the rows are about, like the otp challenge a code belongs to
 
-	await ledgerAddMany([//one send writes three rows--the mention, the dealing with the provider, and the challenge--and they are one operation
-		{action: 'Email.', event: 'Mentioned.',  browserHash, tag: operation, json: {n: 1}},
-		{action: 'Email.', event: 'Sent.',       browserHash, tag: operation, provider: 'Twilio.', json: {n: 2}},
-		{action: 'Email.', event: 'Challenged.', browserHash, tag: operation, provider: 'Twilio.', json: {n: 3}},
-		{action: 'Email.', event: 'Proven.',     browserHash, tag: later,     json: {n: 4}},//the code she typed later, a call of its own
-		{action: 'Email.', event: 'Removed.',    browserHash},//a row from before the tag existed, or from a path that names no operation
+	await ledgerAddMany([//two rows about one challenge, one about another, and one about no tagged thing at all
+		{action: 'Email.', event: 'Challenged.', browserHash, tag: challenge, provider: 'Twilio.', json: {n: 1}},
+		{action: 'Email.', event: 'Proven.',     browserHash, tag: challenge, json: {n: 2}},
+		{action: 'Email.', event: 'Proven.',     browserHash, tag: other,     json: {n: 3}},
+		{action: 'Email.', event: 'Removed.',    browserHash, json: {n: 4}},//a remove is about an address, not a challenge, so it names no tag--the common case
 	])
-	let mine = await queryGet('ledger_table', {tag_text: operation})
-	ok(mine.length == 3 && mine.every(r => r.tag_text == operation))//the whole send under one filter, three verbs of one action
-	ok((await queryGet('ledger_table', {tag_text: later})).length == 1)//and the later call stays its own
-	ok((await queryGet('ledger_table', {action_text: 'Email.', event_text: 'Removed.'}))[0].tag_text == '')//blank when the row belongs to no operation
+	let mine = await queryGet('ledger_table', {tag_text: challenge})
+	ok(mine.length == 2 && mine.every(r => r.tag_text == challenge))//both records about this challenge, across two different verbs
+	ok((await queryGet('ledger_table', {tag_text: other})).length == 1)
+	ok((await queryGet('ledger_table', {action_text: 'Email.', event_text: 'Removed.'}))[0].tag_text == '')//blank when the row is about no such thing
+	ok((await queryGet('ledger_table', {action_text: 'Email.'})).every(r => r.door_tag == gridDoor.tag))//and all four name the request that wrote them, whether they carry a tag of their own or not
 
 	await pglite.query('SET enable_seqscan = off')//a handful of rows would always seq scan, so forcing index consideration is what proves the partial predicate is provable from the filter
-	let plan = (await pglite.query(`EXPLAIN SELECT * FROM ledger_table WHERE hide = 0 AND tag_text = '${operation}' ORDER BY row_tick DESC`)).rows.map(r => Object.values(r)[0]).join('\n')
+	let plan = (await pglite.query(`EXPLAIN SELECT * FROM ledger_table WHERE hide = 0 AND tag_text = '${challenge}' ORDER BY row_tick DESC`)).rows.map(r => Object.values(r)[0]).join('\n')
 	await pglite.query('SET enable_seqscan = on')
 	ok(plan.includes('ledger8'))//postgres proves tag_text = a nonblank constant implies tag_text != '', so the partial index serves the lookup
 
 	let tossed = false; try { await ledgerAdd({action: 'Email.', browserHash, tag: 'not a tag'}) } catch (e) { tossed = true }
 	ok(tossed)//the cell holds a tag or the blank, nothing else
+})
+
+grid(async () => {//ledger: door_tag reaches every row a request writes, so two trips through one function stay separable long afterward, and the planner reaches them through ledger9
+	let {clear, pglite} = await getDatabase()
+	await clear('credential_table'); await clear('ledger_table')
+	let userTag = Tag()
+	let first = {...gridDoor, tag: Tag()}, second = {...gridDoor, tag: Tag()}//two requests, each with the tag its own door minted
+	let v1 = validateEmailOrPhone(Tag() + '@example.com'), v2 = validateEmailOrPhone(Tag() + '@example.com')
+
+	await doorAsyncLocalStorageRun(first,  () => credentialOtpSend({v: v1, provider: 'Amazon.', userTag}))//the same user asks for a code twice, at two addresses
+	await doorAsyncLocalStorageRun(second, () => credentialOtpSend({v: v2, provider: 'Twilio.', userTag}))
+
+	let all = await _ledger(userTag, 'Email.')
+	ok(all.length == 4 && all.every(r => r.tag_text == ''))//two rows per send, the mention and the challenge, and none of them is about one tagged thing
+	let mine = await queryGet('ledger_table', {door_tag: first.tag})
+	ok(mine.length == 2 && mine.every(r => r.json.address.f0 == v1.f0))//the first request's rows and only those, though no call site asked for the tag
+	ok((await queryGet('ledger_table', {door_tag: second.tag})).every(r => r.json.address.f0 == v2.f0))//and the second's, under its own
+
+	await pglite.query('SET enable_seqscan = off')
+	let plan = (await pglite.query(`EXPLAIN SELECT * FROM ledger_table WHERE hide = 0 AND door_tag = '${first.tag}' ORDER BY row_tick DESC`)).rows.map(r => Object.values(r)[0]).join('\n')
+	await pglite.query('SET enable_seqscan = on')
+	ok(plan.includes('ledger9'))//nothing partial to prove here, since every row has a door tag; the index simply serves the lookup
+
+	let tossed = false; try { await doorAsyncLocalStorageRun({...gridDoor, tag: ''}, () => ledgerAdd({action: 'Email.'})) } catch (e) { tossed = true }
+	ok(tossed)//a door without a tag can't write a row; the cell is never blank and never the caller's to choose
 })
 
 grid(async () => {//envelope: the security checks in openEnvelope, which totp, otp, wallet, media, and the worker to lambda door all lean on; the test lives down here rather than beside the envelope functions because grid() itself must be defined first

@@ -513,7 +513,7 @@ export async function fetchLambda({from, route, action, body = {}}) {//fetch to 
 	checkActions({action: from, actions: ['Page.', 'Worker.']}); checkRoute(route); checkAction(action)
 
 	body = makePlain({...body, action})
-	if (from == 'Worker.') body.envelope = await sealEnvelope('Network23.', Limit.handoff, {browserHash: getDoor().browserHash})//workers prove identity with a sealed envelope; pages can't (no server key), so each page->lambda route handles its own auth. the letter carries the browser the worker is serving, so a ledger row the lambda writes names it the way the worker's rows do
+	if (from == 'Worker.') body.envelope = await sealEnvelope('Network23.', Limit.handoff, {browserHash: getDoor().browserHash, tag: getDoor().tag})//workers prove identity with a sealed envelope; pages can't (no server key), so each page->lambda route handles its own auth. the letter carries the browser the worker is serving and the tag of the request it is serving, so the rows the lambda writes name the browser and gather with the worker's the way its own rows do
 
 	const f = $fetch//used from Nuxt front end or Nuxt back end, either way, we always have Nuxt's $fetch
 	return await f(lambda23(route), {method: 'POST', body})
@@ -646,6 +646,7 @@ export async function doorLambda(method, {
 			door = await doorLambdaOpen({from, method, lambdaEvent, lambdaContext})
 			await doorLambdaCheck({door, actions})
 			if (door.from == 'Worker.') door.browserHash = door.letter.browserHash//the browser the worker was serving, from the sealed letter, so a ledger row written below names it as the worker's rows do
+			if (door.from == 'Worker.' && hasTag(door.letter.tag)) door.tag = door.letter.tag//and the request it is serving, so the rows we write here gather with the ones it wrote; a letter without a tag, which is what an older worker sends during a deploy, leaves the tag this door minted
 			response = await doorAsyncLocalStorageRun(door, () => doorHandleBelow({
 				door,
 				query: door.query,//lambda GET not in use, but here for the future, ttd november2025
@@ -736,6 +737,7 @@ function _doorWorkerHeaders({workerEvent}) {//the start of a door any worker req
 	door.ip = toTextOrBlank(headerGetOne(door.headers, 'cf-connecting-ip'))//the address cloudflare saw, or blank without cloudflare, like local development
 	door.geography = headerGeography({headers: door.headers})//and where cloudflare placed it, or {} without cloudflare
 	door.browser = headerBrowser({headers: door.headers})//the browser's own account of itself, its agent string
+	door.tag = Tag()//this request's own tag, which every ledger row it writes carries in door_tag, so the records of one request gather under one filter
 	return door
 }
 
@@ -789,6 +791,7 @@ async function doorLambdaOpen({from, method, lambdaEvent, lambdaContext}) {
 
 	let door = {}//our object that bundles together everything about this incoming request
 	door.from = from
+	door.tag = Tag()//a tag of our own, which the worker's overwrites below when a worker sent us; a page reaching us directly starts its own request here
 
 	door.lambdaEvent = lambdaEvent//save everything amazon is telling us about it
 	door.lambdaContext = lambdaContext

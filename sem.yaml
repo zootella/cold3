@@ -1,5 +1,5 @@
 summary:
-  generated: 2026sep9.1935.49794
+  generated: 2026sep10.1351.14526
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -624,8 +624,8 @@ modules:
     versions:
       declared: ^1.12.36 on 2026jan30 7m old
       installed: 1.13.7 on 2026jun18 2m old
-      current: 1.13.12 on 2026aug27 0m old
-      latest: 1.13.12 on 2026aug27 0m old
+      current: 1.13.13 on 2026sep10 0m old
+      latest: 1.13.13 on 2026sep10 0m old
     downloads:
       weekly: 15,907,364
       on: 2026aug18.1523.29150
@@ -689,8 +689,8 @@ modules:
     versions:
       declared: ^6.7.0 on 2026jun24 2m old
       installed: 6.7.0 on 2026jun24 2m old
-      current: 6.7.8 on 2026aug10 0m old
-      latest: 6.7.8 on 2026aug10 0m old
+      current: 6.7.8 on 2026aug10 1m old
+      latest: 6.7.8 on 2026aug10 1m old
     downloads:
       weekly: 124,309
       on: 2026aug18.1523.58589
@@ -874,7 +874,7 @@ modules:
       declared: ^5.13.0 on 2026mar12 5m old
       installed: 5.13.1 on 2026mar24 5m old
       current: 5.13.1 on 2026mar24 5m old
-      latest: 6.1.0 on 2026aug11 0m old 🎁 Major new version available
+      latest: 6.1.1 on 2026sep10 0m old 🎁 Major new version available
     downloads:
       weekly: 4,891,316
       on: 2026aug18.1523.45867
@@ -911,8 +911,8 @@ modules:
     from: site
     versions:
       declared: ^1.12.13 on 2025feb16 18m old 🏺 Declared release 6+ months earlier than installed
-      installed: 1.15.6 on 2026jun10 2m old
-      current: 1.15.6 on 2026jun10 2m old
+      installed: 1.15.6 on 2026jun10 3m old
+      current: 1.15.6 on 2026jun10 3m old
       latest: 0.6.15 on 2024apr19 28m old 🩸 Latest tag is behind installed
     downloads:
       weekly: 69,431
@@ -941,7 +941,7 @@ modules:
       declared: ^6.4.1 on 2025oct20 10m old
       installed: 6.4.3 on 2026jun01 3m old
       current: 6.4.3 on 2026jun01 3m old
-      latest: 8.2.2 on 2026aug20 0m old 🎁 Major new version available
+      latest: 8.3.0 on 2026sep10 0m old 🎁 Major new version available
     downloads:
       weekly: 142,923,941
       on: 2026aug18.1523.45867
@@ -995,9 +995,9 @@ modules:
     from: root
     versions:
       declared: ^2.8.2 on 2025nov30 9m old
-      installed: 2.9.0 on 2026may11 3m old
-      current: 2.9.0 on 2026may11 3m old
-      latest: 2.9.0 on 2026may11 3m old
+      installed: 2.9.0 on 2026may11 4m old
+      current: 2.9.0 on 2026may11 4m old
+      latest: 2.9.0 on 2026may11 4m old
     downloads:
       weekly: 163,067,115
       on: 2026aug18.1523.29150
@@ -1009,8 +1009,8 @@ modules:
     versions:
       declared: ^4.3.6 on 2026jan22 7m old
       installed: 4.4.3 on 2026may04 4m old
-      current: 4.6.0 on 2026sep09 0m old
-      latest: 4.6.0 on 2026sep09 0m old
+      current: 4.6.1 on 2026sep09 0m old
+      latest: 4.6.1 on 2026sep09 0m old
     downloads:
       weekly: 224,127,336
       on: 2026aug18.1523.45867

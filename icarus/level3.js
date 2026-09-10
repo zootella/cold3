@@ -1184,21 +1184,23 @@ The browser speaks more strongly. Its user-agent string, the agent in client_jso
 
 Cloudflare speaks more strongly still, from outside the request's control. ip_text is the cf-connecting-ip header Cloudflare writes on the way in, overwriting anything the client sent, and the geography every row carries in client_json is what Cloudflare derived from that address at that moment. A user can choose a network or a vpn, but neither page nor browser can name a different address. origin_text comes from the host and forwarded-protocol headers Cloudflare routes on. Without Cloudflare, as in local development, ip and geography are blank, and blank means exactly that; origin still assembles from the local host.
 
-Our own code speaks last. wrapper_hash is the build that wrote the row, row_tick is the worker's clock, user_tag_text is our lookup of who was signed in at that browser_hash, and action_text, event_text, provider_text, and hash_text are what our code says happened. Inside json a row may also carry a third party's word, like the response Twilio returned, kept verbatim as what they said rather than what we concluded.
+Our own code speaks last. wrapper_hash is the build that wrote the row, row_tick is the worker's clock, door_tag is what our door minted for the request, user_tag_text is our lookup of who was signed in at that browser_hash, and action_text, event_text, provider_text, hash_text, and tag_text are what our code says happened. Inside json a row may also carry a third party's word, like the response Twilio returned, kept verbatim as what they said rather than what we concluded.
 
 None of this is labeled in the data. The schema does not sort cells into trusted and reported, and no row carries a bag per source, because a label on every cell would repeat what this essay says once and get in the way of reading the row. The cell is the label.
 */
 
 /*
-hash_text and tag_text: the two margins that gather rows together
+door_tag, hash_text, and tag_text: the three cells that gather rows together
 
-Two cells sit side by side for one reason. When a row is about a single nameable thing, hash_text holds the hash of that thing. When a row is part of a single operation, tag_text holds the tag of that operation. Both stay blank the rest of the time. Everything else a row has to say rides in json, and these two are the exception because a margin is what you can search and filter on quickly: each carries its own index, and a lookup by either hands back the matching rows newest first without reading the table.
+Most of what a ledger row holds describes one moment. Three cells do something else: they let a row find its relatives. They divide into one that every row carries and two that most rows leave blank, and the difference between those two kinds is worth understanding before adding a fourth.
 
-That is the whole argument for them, and it is the limit of it too. Neither cell is a slot waiting to be filled. Hashing something merely so hash_text has a value is likely wrong: an address is not a hash, and hashing it here would put a second copy of a fact json already carries into a cell that means something else. A blank is a real answer, and it says this row is about no single thing, or belongs to no single operation. Fill either cell when the row genuinely has one, and leave it alone when it doesn't.
+door_tag is the mandatory one. Every door mints a tag as it opens and pins it on the door, and _ledgerRow puts it on every row it assembles, so each row names the single request that wrote it. This answers a question nothing else here can. browser_hash says which cookie jar was on the line, but Alice and Bob share the living room profile, so it cannot separate them. user_tag_text says who was signed in, but Alice is signed in on her chromebook too, so it cannot separate her two visits. Even the tick only gets close, and the moment two people click at once it stops being an answer at all. door_tag says these particular rows came from one click, and it keeps saying it after the request, the isolate, and the day are gone.
 
-The tag earns its column on a shape that keeps recurring. A function writes a row, then tries something it cannot be sure of, reaching a third-party API most often, and then afterwards, if there is an afterwards, writes a second row saying how it went. Without a tag the second row would have to repeat enough of the first to be recognizable as the same story, and a reader would be left matching them up by their timestamps. So the function mints one tag for the call and puts it on every row that call writes. The rows then find each other by their matching tags, the second row carries only what is new, and the pair reads in order. A first row with no second is a finding of its own: the call never came back.
+The mechanism underneath is worth knowing, because it is what lets the column be mandatory. The door rides in AsyncLocalStorage, so getDoor() reaches it from anywhere below, however deep and across every await, and the runtime keeps each request's door separate even when several requests share one isolate. Nothing threads a parameter, so no function can forget to pass one, and a rule that no function can forget is a rule the database can require. It crosses into the lambda too: the worker seals its tag into the Network23. envelope, and the lambda door takes it over the one it minted, so the rows both providers write about one request gather together. Rows written before doors carried tags hold twenty-one zeros, tag-shaped so every guard accepts it and unmistakable on sight.
 
-Neither column promises uniqueness across the table, and the duplicates are the point. Many rows share one hash deliberately, because everything we know about one address is exactly what a query by that hash should return, and every row of one operation carries that operation's tag by design. One narrow exception stands: ledger7 is unique on hash_text for Hit. rows alone, which is how a visit records once an hour, and it is partial precisely so rows of every other action stay free to repeat.
+hash_text and tag_text are the optional pair, and they work the same way as each other. When a row is about one nameable thing, hash_text holds the hash of that thing; when a row is about one tagged thing, like the otp challenge a code belongs to, tag_text holds that tag. Both stay blank the rest of the time, and blank is a real answer rather than a gap. Neither is a slot waiting to be filled: hashing something merely so hash_text has a value is likely wrong, because an address is not a hash, and hashing it here would put a second copy of a fact json already carries into a cell that means something else. Everything else a row has to say rides in json, and these earn columns only because a margin is what you can search and filter on quickly, each carrying its own index that hands back matching rows newest first without reading the table.
+
+None of the three promises uniqueness, and the duplicates are the point. Every row of one request repeats that request's door tag by design, many rows share one hash deliberately, because everything we know about one address is exactly what a query by that hash should return, and rows about one challenge repeat its tag the same way. One narrow exception stands: ledger7 is unique on hash_text for Hit. rows alone, which is how a visit records once an hour, and it is partial precisely so rows of every other action stay free to repeat.
 */
 SQL(`
 -- durable audit in our own database: what happened, who was here, and everything else about it
@@ -1208,13 +1210,14 @@ CREATE TABLE ledger_table (
 	row_tick       BIGINT    NOT NULL,
 	hide           BIGINT    NOT NULL,
 
-	-- where this happened, and who was here; the essay above says who vouches for each cell
+	-- where this happened, who was here, and which request it was; the essay above says who vouches for each cell
 	wrapper_hash   CHAR(52)  NOT NULL,  -- the build of our software that wrote the row
 	ip_text        TEXT      NOT NULL,  -- the ip address cloudflare saw, or blank without cloudflare
 	origin_text    TEXT      NOT NULL,  -- the origin like "http://localhost:3000" or "https://example.com"
 	client_json    JSONB     NOT NULL,  -- what we're told about the client beyond its ip and origin: geography, where cloudflare placed the ip, and browser, the agent string, plus for a hit what the page said about its graphics
 	browser_hash   CHAR(52)  NOT NULL,  -- the browser that was here, by the hash of its tag
 	user_tag_text  TEXT      NOT NULL,  -- the user signed in at that browser, or blank if none
+	door_tag       CHAR(21)  NOT NULL DEFAULT '000000000000000000000',  -- the request that wrote this row, minted by the door it came through; every row has one, and the rows of one request gather under it. rows written before doors carried tags hold the twenty-one zeros of this default, which is also scaffolding for the deploy window; the contraction drops it, and from then on an insert without a door tag fails
 
 	-- what happened, in three tags rather than numeric codes, so a query result reads without a legend
 	action_text    TEXT      NOT NULL,  -- the subject, like "Email."; the one of the three every row names
@@ -1222,7 +1225,7 @@ CREATE TABLE ledger_table (
 	provider_text  TEXT      NOT NULL,  -- the third party we dealt with, like "Twilio."; blank when we dealt with none
 
 	hash_text      TEXT      NOT NULL,  -- the hash of the one thing this row is about, like an address, gathering every record about it, or for Hit. the hash of the hour and the visit that ledger7 keeps unique; blank when the row is about no such thing
-	tag_text       TEXT      NOT NULL DEFAULT '',  -- the tag of the one operation this row is part of, gathering every row that one call wrote; blank when the row is part of no such operation. the default is scaffolding until the deploy fills the cell, and the contraction drops it
+	tag_text       TEXT      NOT NULL DEFAULT '',  -- the tag of the one thing this row is about, like the otp challenge a code belongs to, the way hash_text above holds its one hash; blank when the row is about no such thing. the default is scaffolding for the deploy window, and the contraction drops it
 
 	json           JSONB     NOT NULL   -- everything else about what happened; {} when the columns say it all
 );
@@ -1234,7 +1237,8 @@ CREATE INDEX ledger4 ON ledger_table (hash_text,     row_tick DESC) WHERE hide =
 CREATE INDEX ledger5 ON ledger_table (event_text,    row_tick DESC) WHERE hide = 0 AND event_text != '';  -- everything of one kind, newest first
 CREATE INDEX ledger6 ON ledger_table (provider_text, row_tick DESC) WHERE hide = 0 AND provider_text != '';  -- everything around one third party, newest first
 CREATE UNIQUE INDEX ledger7 ON ledger_table (hash_text) WHERE action_text = 'Hit.';  -- one Hit. per browser per hour: partial, because rows of other actions share a hash on purpose, and recordHit's plain insert lets it raise 23505 to say the visit is already recorded
-CREATE INDEX ledger8 ON ledger_table (tag_text,      row_tick DESC) WHERE hide = 0 AND tag_text != '';  -- every row one operation wrote, newest first
+CREATE INDEX ledger8 ON ledger_table (tag_text,      row_tick DESC) WHERE hide = 0 AND tag_text != '';  -- every record about one tagged thing, newest first
+CREATE INDEX ledger9 ON ledger_table (door_tag,      row_tick DESC) WHERE hide = 0;  -- every row one request wrote, newest first; no partial predicate, because no row lacks a door tag
 
 ALTER TABLE ledger_table ENABLE ROW LEVEL SECURITY;
 `)
@@ -1257,13 +1261,13 @@ function _ledgerRow(e, now) {//check one record and shape it as a ledger_table r
 		browserHash = door.browserHash,//the browser that was here, from the door like the ip and origin, unless the record names one itself, as a hit does with the hash it was given
 		userTag = '',//the user, or blank if nobody's identified
 		hash = '',//the row's one meaningful hash when what happened was about something we can name that way, so every record about that thing is an indexed lookup; blank when it wasn't
-		tag = '',//the operation this row belongs to, one call that changed something from the outside in, so every row that call wrote gathers under one filter; blank when the row belongs to none
+		tag = '',//the row's one meaningful tag when what happened was about something we name that way, like the otp challenge a code belongs to; blank when it wasn't, which is the common case
 		json = {},//everything else about what happened, kept as data a later reader can query and read back
 		browser = door.browser,//the browser's account of itself, the door's agent string unless the record extends it, as a hit does with what the page said about its graphics
 	} = e
 	checkAction(action); checkActionOrBlank(event); checkActionOrBlank(provider); checkHash(browserHash)
 	checkTagOrBlank(userTag); checkHashOrBlank(hash); checkTagOrBlank(tag); checkPlain(json); checkPlain(browser)
-	checkTextOrBlank(door.ip); checkTextOrBlank(door.origin); checkPlain(door.geography); checkPlain(door.browser)//what the ledger requires of the door above it, beyond the browser hash checked above: a worker door always has all four, a lambda door has none, and a test door is whatever the test made
+	checkTag(door.tag); checkTextOrBlank(door.ip); checkTextOrBlank(door.origin); checkPlain(door.geography); checkPlain(door.browser)//what the ledger requires of the door above it, beyond the browser hash checked above: every door mints a tag, a worker door has all four of the rest, a lambda door has none of them, and a test door is whatever the test made
 	return {
 		row_tick: now,
 		wrapper_hash: wrapper.hash,
@@ -1272,6 +1276,7 @@ function _ledgerRow(e, now) {//check one record and shape it as a ledger_table r
 		client_json: {geography: door.geography, browser},//the two objects about the client, in the same shape on every row
 		browser_hash: browserHash,
 		user_tag_text: userTag,
+		door_tag: door.tag,//the request that wrote this row: never blank, and never the caller's to choose
 		action_text: action,
 		event_text: event,
 		provider_text: provider,
