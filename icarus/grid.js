@@ -114,9 +114,9 @@ grid(async () => {//otp: 3 wrong guesses then correct works; 4 wrong exhausts co
 	ok((await _otpLive(userTag, 'Email.')).length == 0)
 
 	let wrong = await _ledger(userTag, 'Email.', 'Refused.')//every wrong guess left a row naming the browser that made it, with the guesses left
-	ok(wrong.length == 6 && wrong.every(r => r.json.outcome == 'Wrong.' && hasText(r.json.guess) && hasText(r.json.address.f0)) && wrong.filter(r => r.json.tag == m4.tag).length == 3 && wrong.filter(r => r.json.lives == 1).length == 2)
+	ok(wrong.length == 6 && wrong.every(r => r.json.outcome == 'Wrong.' && hasText(r.json.guess) && hasText(r.json.address.f0)) && wrong.filter(r => r.tag_text == m4.tag).length == 3 && wrong.filter(r => r.json.lives == 1).length == 2)
 	let expired = await _ledger(userTag, 'Email.', 'Expired.')//the fourth wrong guess closed the challenge; the fifth try found nothing live and wrote nothing
-	ok(expired.length == 1 && expired[0].json.tag == m4.tag)
+	ok(expired.length == 1 && expired[0].tag_text == m4.tag)
 	ok((await _ledger(userTag, 'Email.', 'Proven.')).length == 1)//the code that was right
 })
 grid(async () => {//otp: replacement code kills previous code to same address
@@ -516,7 +516,7 @@ grid(async () => {//wallet prove: the whole flow, nonce to saved proof, with a r
 	let ledger = await _ledger(userTag, 'Ethereum.')//the three rows the flow leaves: the mention, the challenge, and the proof
 	let mentioned = ledger.find(r => r.event_text == 'Mentioned.'), challenged = ledger.find(r => r.event_text == 'Challenged.'), proven = ledger.find(r => r.event_text == 'Proven.')
 	ok(ledger.length == 3 && mentioned && challenged && proven && ledger.every(r => r.json.address.f0 == f0 && r.hash_text == ''))
-	ok(mentioned.json.connector == 'Injected.' && challenged.json.nonce == prove.nonce && challenged.json.connector == 'Injected.' && proven.json.nonce == prove.nonce)
+	ok(mentioned.json.connector == 'Injected.' && challenged.tag_text == prove.nonce && challenged.json.connector == 'Injected.' && proven.tag_text == prove.nonce)//the nonce is this flow's challenge tag, so it rides the margin and gathers the challenge with the proof that answered it
 	ok(!ledger.some(r => r.event_text == 'Asked.'))//an ordinary wallet proves itself offline, so the chain was never asked
 })
 grid(async () => {//wallet prove: the challenge belongs to the user and the address step 1 was for, and lives twenty minutes
@@ -1052,7 +1052,9 @@ grid(async () => {//otp into credential: the full flow writes lifecycle rows for
 	let mentioned = ledger.find(r => r.event_text == 'Mentioned.'), challenged = ledger.find(r => r.event_text == 'Challenged.'), proven = ledger.find(r => r.event_text == 'Proven.')
 	ok(ledger.every(r => r.json.address.f0 == v.f0 && r.hash_text == ''))//the address rides every row in json, and the hash margin stays blank, since an address is not a hash
 	ok(ledger.length == 3 && mentioned && challenged && proven)
-	ok(!('outcome' in mentioned.json) && challenged.json.tag == m.tag && challenged.provider_text == 'Amazon.' && proven.json.tag == m.tag)//a code went out, so the mention names no outcome; the challenge names the provider that carried it in its own column
+	ok(!('outcome' in mentioned.json) && challenged.tag_text == m.tag && challenged.provider_text == 'Amazon.' && proven.tag_text == m.tag)//a code went out, so the mention names no outcome; the challenge names the provider that carried it in its own column
+	ok(mentioned.tag_text == '')//the mention comes before any challenge exists, so it names none
+	ok((await queryGet('ledger_table', {tag_text: m.tag})).length == 2)//and the challenge gathers its own rows across the two clicks that made them, which is what the margin is for
 	ok((await _ledger(userTag, 'Email.', 'Sent.')).length == 0)//in simulation no message goes to the lambda, so there is no dealing with a provider to record
 })
 
@@ -1119,7 +1121,7 @@ grid(async () => {//otp into credential: two users' challenges to one address co
 	ok(!late.success && late.outcome == 'Held.')//but the address found its holder while his code was in flight; the enter-time check closes the race the send-time check can't see
 	ok((await _otpLive(bob, 'Email.')).length == 0)//and his dead challenge is hidden
 	let refused = await _ledger(bob, 'Email.', 'Refused.')//the lost race is on the record under bob, with the challenge it closed
-	ok(refused.length == 1 && refused[0].json.outcome == 'Held.' && refused[0].json.tag == mb.tag)
+	ok(refused.length == 1 && refused[0].json.outcome == 'Held.' && refused[0].tag_text == mb.tag)
 })
 
 grid(async () => {//otp into credential: removing an address mid-challenge takes the challenge with it, so a late correct code finds nothing
@@ -1355,7 +1357,9 @@ grid(async () => {//ledger: door_tag reaches every row a request writes, so two 
 	await doorAsyncLocalStorageRun(second, () => credentialOtpSend({v: v2, provider: 'Twilio.', userTag}))
 
 	let all = await _ledger(userTag, 'Email.')
-	ok(all.length == 4 && all.every(r => r.tag_text == ''))//two rows per send, the mention and the challenge, and none of them is about one tagged thing
+	ok(all.length == 4)//two rows per send, the mention and the challenge
+	ok(all.filter(r => r.event_text == 'Mentioned.').every(r => r.tag_text == ''))//a mention comes before any challenge exists, so it names none
+	ok(all.filter(r => r.event_text == 'Challenged.').every(r => hasText(r.tag_text)))//and each challenge names itself, which is a different question from which request wrote it
 	let mine = await queryGet('ledger_table', {door_tag: first.tag})
 	ok(mine.length == 2 && mine.every(r => r.json.address.f0 == v1.f0))//the first request's rows and only those, though no call site asked for the tag
 	ok((await queryGet('ledger_table', {door_tag: second.tag})).every(r => r.json.address.f0 == v2.f0))//and the second's, under its own

@@ -256,7 +256,7 @@ export async function credentialOtpSend({v, provider, userTag}) {
 		{message: safefill`OTP answer: tag ${o.tag} answer ${o.answer}`},//the answer, as the hash of this message; enter hashes the guess into the same words and looks for a match
 	])
 	await credentialOtpChallenged({userTag, type: o.address.type, v: o.address, provider: o.provider, tag: o.tag})//the Challenged. row: the state of the flow, with the tag that names it and the provider that carried the code
-	if (sent) await ledgerAdd({action: o.address.type, event: 'Sent.', provider: o.provider, userTag, json: {tag: o.tag, address: _forms(o.address), ...sent}})//the dealing with the provider, a row of its own: the address in its three forms, the tag, which gathers the record with the challenge it belongs to, and the whole task the lambda returned--provider, parameters, request, response, error, duration--kept as a queryable record of this third party send. Every other ledger write in this file follows the line it records; this one waits until step 4 has recorded the whole challenge, because step 3 already put a code in the user's inbox, and a write that tossed here would leave her holding a code with no challenge to enter it against
+	if (sent) await ledgerAdd({action: o.address.type, event: 'Sent.', provider: o.provider, userTag, tag: o.tag, json: {address: _forms(o.address), ...sent}})//the dealing with the provider, a row of its own: the challenge it carried the code for in the tag margin, the address in its three forms, and the whole task the lambda returned--provider, parameters, request, response, error, duration--kept as a queryable record of this third party send. Every other ledger write in this file follows the line it records; this one waits until step 4 has recorded the whole challenge, because step 3 already put a code in the user's inbox, and a write that tossed here would leave her holding a code with no challenge to enter it against
 
 	return {success: true}//ttd january, if the lambda fails, but doesn't throw, we know there's no email waiting, but don't tell the page, or try a second provider; revisit this choice at some point
 }
@@ -285,7 +285,7 @@ export async function credentialOtpEnter({tag, guess, userTag}) {
 	let holder = await credentialOtpHolder({type: v.type, f0: v.f0})
 	if (holder && holder.userTag != userTag) {
 		await _otpHideChallenge({userTag, tag})//the challenge is dead no matter what the guess was; the address is spoken for
-		await ledgerAdd({action: v.type, event: 'Refused.', userTag, json: {address: forms, tag, guess, outcome: 'Held.'}})//an address two users reached for at once, and the one who lost the race, on the record with what they typed
+		await ledgerAdd({action: v.type, event: 'Refused.', userTag, tag, json: {address: forms, guess, outcome: 'Held.'}})//an address two users reached for at once, and the one who lost the race, on the record with what they typed
 		return {success: false, outcome: 'Held.'}
 	}
 
@@ -303,12 +303,12 @@ export async function credentialOtpEnter({tag, guess, userTag}) {
 		if (lives <= 0) {// ✍🏻 expired by too many wrong guesses
 
 			await _otpHideChallenge({userTag, tag})//the trail counted the guesses; hiding the row is what ends the challenge
-			await ledgerAdd({action: v.type, event: 'Expired.', userTag, json: {address: forms, tag, guess}})//the fourth wrong guess closed the challenge
+			await ledgerAdd({action: v.type, event: 'Expired.', userTag, tag, json: {address: forms, guess}})//the fourth wrong guess closed the challenge
 			return {success: false, outcome: 'Expired.'}//treat exhausted guesses like expired; user remedy is the same: request a new code
 
 		} else {// ✍🏻 person can guess again
 
-			await ledgerAdd({action: v.type, event: 'Refused.', userTag, json: {address: forms, tag, guess, outcome: 'Wrong.', lives}})//the trail counts the guess; this row keeps what was typed and names the ip that typed it, which is what finds the attacker who learned alice's number and is guessing at her code
+			await ledgerAdd({action: v.type, event: 'Refused.', userTag, tag, json: {address: forms, guess, outcome: 'Wrong.', lives}})//the trail counts the guess; this row keeps what was typed and names the ip that typed it, which is what finds the attacker who learned alice's number and is guessing at her code
 			return {success: false, outcome: 'Wrong.', lives}//tell the person how many guesses they have left; may encourage them to type more carefully
 		}
 	}
@@ -614,11 +614,11 @@ export async function credentialWalletSet({userTag, address, nonce = ''}) {
 	let forms = _forms(v)//the address in its three forms, on every ledger row this writes
 	let outcome = await credentialWalletRefusal({userTag, address})
 	if (outcome) {
-		await ledgerAdd({action: 'Ethereum.', event: 'Refused.', userTag, json: {address: forms, outcome, nonce: nonce || undefined}})//every refusal, the contested WalletClaimedElsewhere. and the user's own WalletAlreadyProven. and WalletFull. alike, from this one line; || undefined makes a blank nonce an absent key
+		await ledgerAdd({action: 'Ethereum.', event: 'Refused.', userTag, tag: nonce, json: {address: forms, outcome}})//every refusal, the contested WalletClaimedElsewhere. and the user's own WalletAlreadyProven. and WalletFull. alike, from this one line; the nonce is this flow's challenge tag, and blank when a test set the proof directly
 		return {ok: false, outcome}
 	}
 	await credentialSet({userTag, type: 'Ethereum.', event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2, json: nonce ? {nonce} : {}})//an absent key is the blank of a property
-	await ledgerAdd({action: 'Ethereum.', event: 'Proven.', userTag, json: {address: forms, nonce: nonce || undefined}})
+	await ledgerAdd({action: 'Ethereum.', event: 'Proven.', userTag, tag: nonce, json: {address: forms}})//the nonce that proved it in the tag margin, gathering the proof with the challenge it answers
 	return {ok: true}
 }
 
@@ -671,7 +671,7 @@ export async function credentialWalletProve1({userTag, address, connector}) {
 
 	let nonce = Tag()//21 base62 characters; the page embeds this in the SIWE message it asks the wallet to sign
 	await credentialSet({userTag, type: 'Ethereum.', event: 'Challenged.', f0: v.f0, f1: v.f1, f2: v.f2, json: {nonce, connector}})//the challenge: we challenged this address with this nonce, row_tick is its clock, and the connector is how she connected
-	await ledgerAdd({action: 'Ethereum.', event: 'Challenged.', userTag, json: {address: forms, nonce, connector}})
+	await ledgerAdd({action: 'Ethereum.', event: 'Challenged.', userTag, tag: nonce, json: {address: forms, connector}})
 	return {nonce}
 }
 
@@ -874,7 +874,7 @@ export async function credentialOtpMentioned({userTag, type, v, outcome = ''}) {
 export async function credentialOtpChallenged({userTag, type, v, provider, tag = ''}) {//record we used provider to send a code to address v; tag names the challenge, and a row without one, like a fixture in the tests, never reads as live
 	checkTag(userTag); checkAction(provider); checkTagOrBlank(tag)//provider is a canonical tag like 'Amazon.' or 'Twilio.'; the endpoint maps the page's single letter before any of this
 	await credentialSet({userTag, type, event: 'Challenged.', f0: v.f0, f1: v.f1, f2: v.f2, json: tag ? {provider, tag} : {provider}})//which provider carried the code, and which challenge this is; an absent key is the blank of a property
-	await ledgerAdd({action: type, event: 'Challenged.', provider, userTag, json: {address: _forms(v), tag: tag || undefined}})//the state of the flow, on the record, with the provider that carried the code in the column every row names a third party in; the dealing with that provider, what we asked and what they answered, is the send's own Sent. row
+	await ledgerAdd({action: type, event: 'Challenged.', provider, userTag, tag, json: {address: _forms(v)}})//the state of the flow, on the record, with the challenge in the tag margin and the provider that carried the code in the column every row names a third party in; the dealing with that provider, what we asked and what they answered, is the send's own Sent. row
 }
 
 export async function credentialOtpProven({userTag, type, v, tag = ''}) {//the user typed the correct code; save proof they control this address, naming the challenge that proved it so the proof points at its history
@@ -884,7 +884,7 @@ export async function credentialOtpProven({userTag, type, v, tag = ''}) {//the u
 	let challenges = await queryGet('credential_table', {user_tag: userTag, type_text: type, f0_text: v.f0, event_text: 'Challenged.'})
 	if (!challenges.length) return false//no visible start of this flow; the user removed the address mid-challenge, and a late correct code shouldn't resurrect it
 	await credentialSet({userTag, type, event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2, json: tag ? {tag} : {}})
-	await ledgerAdd({action: type, event: 'Proven.', userTag, json: {address: _forms(v), tag: tag || undefined}})
+	await ledgerAdd({action: type, event: 'Proven.', userTag, tag, json: {address: _forms(v)}})//the challenge that proved it in the tag margin, so the proof and the send it answers gather together
 	return true
 }
 
