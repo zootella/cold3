@@ -1217,7 +1217,7 @@ CREATE TABLE ledger_table (
 	client_json    JSONB     NOT NULL,  -- what we're told about the client beyond its ip and origin: geography, where cloudflare placed the ip, and browser, the agent string, plus for a hit what the page said about its graphics
 	browser_hash   CHAR(52)  NOT NULL,  -- the browser that was here, by the hash of its tag
 	user_tag_text  TEXT      NOT NULL,  -- the user signed in at that browser, or blank if none
-	door_tag       CHAR(21)  NOT NULL DEFAULT '000000000000000000000',  -- the request that wrote this row, minted by the door it came through; every row has one, and the rows of one request gather under it. rows written before doors carried tags hold the twenty-one zeros of this default, which is also scaffolding for the deploy window; the contraction drops it, and from then on an insert without a door tag fails
+	door_tag       CHAR(21)  NOT NULL,  -- the request that wrote this row, minted by the door it came through; every row has one, and the rows of one request gather under it. rows written before doors carried tags hold twenty-one zeros
 
 	-- what happened, in three tags rather than numeric codes, so a query result reads without a legend
 	action_text    TEXT      NOT NULL,  -- the subject, like "Email."; the one of the three every row names
@@ -1225,7 +1225,7 @@ CREATE TABLE ledger_table (
 	provider_text  TEXT      NOT NULL,  -- the third party we dealt with, like "Twilio."; blank when we dealt with none
 
 	hash_text      TEXT      NOT NULL,  -- the hash of the one thing this row is about, like an address, gathering every record about it, or for Hit. the hash of the hour and the visit that ledger7 keeps unique; blank when the row is about no such thing
-	tag_text       TEXT      NOT NULL DEFAULT '',  -- the tag of the one thing this row is about, like the otp challenge a code belongs to, the way hash_text above holds its one hash; blank when the row is about no such thing. the default is scaffolding for the deploy window, and the contraction drops it
+	tag_text       TEXT      NOT NULL,  -- the tag of the one thing this row is about, like the otp challenge a code belongs to, the way hash_text above holds its one hash; blank when the row is about no such thing
 
 	json           JSONB     NOT NULL   -- everything else about what happened; {} when the columns say it all
 );

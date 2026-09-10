@@ -1,5 +1,5 @@
 summary:
-  generated: 2026sep10.1418.46988
+  generated: 2026sep10.1539.1172
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -983,8 +983,8 @@ modules:
     versions:
       declared: ^4.63.0 on 2026feb05 7m old
       installed: 4.105.0 on 2026jun25 2m old
-      current: 4.130.0 on 2026sep08 0m old
-      latest: 4.130.0 on 2026sep08 0m old
+      current: 4.131.0 on 2026sep10 0m old
+      latest: 4.131.0 on 2026sep10 0m old
     downloads:
       weekly: 15,295,217
       on: 2026jul21.1759.35951
