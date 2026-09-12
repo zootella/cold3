@@ -260,7 +260,7 @@ export async function credentialOtpSend({v, provider, userTag}) {
 		{message: safefill`OTP answer: tag ${o.tag} answer ${o.answer}`},//the answer, as the hash of this message; enter hashes the guess into the same words and looks for a match
 	])
 	await credentialOtpChallenged({userTag, type: o.address.type, v: o.address, provider: o.provider, tag: o.tag})//the Challenged. row: the state of the flow, with the tag that names it and the provider that carried the code
-	if (sent) await ledgerAdd({action: o.address.type, event: 'Answered.', provider: o.provider, userTag, tag: o.tag, json: {address: forms, duration, task: sent}})//closing the pair with the whole task; last, so a write that tossed here can't strand a code with no challenge to enter it against
+	if (sent) await ledgerAdd({action: o.address.type, event: 'Answered.', provider: o.provider, userTag, tag: o.tag, duration, json: {address: forms, task: sent}})//closing the pair with the whole task; last, so a write that tossed here can't strand a code with no challenge to enter it against
 
 	return {success: true}//ttd january, if the lambda fails, but doesn't throw, we know there's no email waiting, but don't tell the page, or try a second provider; revisit this choice at some point
 }
@@ -721,10 +721,10 @@ export async function credentialWalletProve2({userTag, address, message, signatu
 			chainId = await client.getChainId()//ask something trivial first: verifySiweMessage answers false whether the contract declined or we simply couldn't reach it, and those two owe the user completely different words
 			valid = await viem_siwe.verifySiweMessage(client, {message, signature, domain: originDomain(), nonce, address, time: now})//EIP-1271: ask the wallet's own contract whether it accepts this signature
 		} catch (e) {
-			await ledgerAdd({action: 'Ethereum.', event: 'Answered.', provider: 'Alchemy.', userTag, tag: nonce, json: {address: forms, request, duration: Now() - t, ...makePlain({error: e})}})//closing the pair with the error as it came, from whichever of the two calls threw
+			await ledgerAdd({action: 'Ethereum.', event: 'Answered.', provider: 'Alchemy.', userTag, tag: nonce, duration: Now() - t, json: {address: forms, request, ...makePlain({error: e})}})//closing the pair with the error as it came, from whichever of the two calls threw
 			return await refuse('Later.')//our provider is down, so we can't judge a contract wallet at all; the remedy is to wait and try again, which is what Later. means everywhere it appears
 		}
-		await ledgerAdd({action: 'Ethereum.', event: 'Answered.', provider: 'Alchemy.', userTag, tag: nonce, json: {address: forms, request, response: {chainId, valid}, duration: Now() - t}})//what we handed the provider, what came back, and how long the round trip took
+		await ledgerAdd({action: 'Ethereum.', event: 'Answered.', provider: 'Alchemy.', userTag, tag: nonce, duration: Now() - t, json: {address: forms, request, response: {chainId, valid}}})//what we handed the provider, what came back, and how long the round trip took
 	}
 	if (!valid) return await refuse('BadSignature.')
 
@@ -1228,6 +1228,7 @@ CREATE TABLE ledger_table (
 	action_text    TEXT      NOT NULL,  -- the subject, like "Email."; the one of the three every row names
 	event_text     TEXT      NOT NULL,  -- the verb, like "Challenged."; blank when the action says it all
 	provider_text  TEXT      NOT NULL,  -- the third party we dealt with, like "Twilio."; blank when we dealt with none
+	duration       BIGINT    NOT NULL DEFAULT -1,  -- the milliseconds a dealing with that third party took, on the row that closes it; -1 on every other row, which timed nothing. the default is scaffolding for the deploy window, and the contraction drops it
 
 	hash_text      TEXT      NOT NULL,  -- the hash of the one thing this row is about, like an address, gathering every record about it, or for Hit. the hash of the hour and the visit that ledger7 keeps unique; blank when the row is about no such thing
 	tag_text       TEXT      NOT NULL,  -- the tag of the one thing this row is about, like the otp challenge a code belongs to, the way hash_text above holds its one hash; blank when the row is about no such thing
@@ -1257,7 +1258,7 @@ provider_text names that third party wherever one is in the row: the provider th
 
 None of this is a list to enforce or complete. checkActionOrBlank checks that a word is shaped like a tag, not that it appears here, and the grid tests pin the exact word each flow writes. The discipline is a habit at each site instead: use the same word when it is the same thing, and use the word the surrounding flow already uses. A list the code enforced would have to be edited before any new flow could record anything, and would go stale the first time somebody worked around it.
 */
-export async function ledgerAdd({action, event, provider, browserHash, userTag, hash, tag, json}) { return await ledgerAddMany([{action, event, provider, browserHash, userTag, hash, tag, json}]) }
+export async function ledgerAdd({action, event, provider, browserHash, userTag, hash, tag, duration, json}) { return await ledgerAddMany([{action, event, provider, browserHash, userTag, hash, tag, duration, json}]) }
 export async function ledgerAddMany(a) {//keep a lasting record of something that happened, durable and queryable in our own database; every element in a is its own complete record
 	let now = Now()
 	let rows = a.map(e => _ledgerRow(e, now))
@@ -1274,11 +1275,12 @@ function _ledgerRow(e, now) {//check one record and shape it as a ledger_table r
 		userTag = '',//the user, or blank if nobody's identified
 		hash = '',//the row's one meaningful hash when what happened was about something we can name that way, so every record about that thing is an indexed lookup; blank when it wasn't
 		tag = '',//the row's one meaningful tag when what happened was about something we name that way, like the otp challenge a code belongs to; blank when it wasn't, which is the common case
+		duration = -1,//the milliseconds a dealing with a third party took, on the row that closes one; -1 everywhere else
 		json = {},//everything else about what happened, kept as data a later reader can query and read back
 		browser = door.browser,//the browser's account of itself, the door's agent string unless the record extends it, as a hit does with what the page said about its graphics
 	} = e
 	checkAction(action); checkActionOrBlank(event); checkActionOrBlank(provider); checkHash(browserHash)
-	checkTagOrBlank(userTag); checkHashOrBlank(hash); checkTagOrBlank(tag); checkPlain(json); checkPlain(browser)
+	checkTagOrBlank(userTag); checkHashOrBlank(hash); checkTagOrBlank(tag); checkInt(duration, -1); checkPlain(json); checkPlain(browser)
 	checkTag(door.tag); checkTextOrBlank(door.ip); checkTextOrBlank(door.origin); checkPlain(door.geography); checkPlain(door.browser)//what the ledger requires of the door above it, beyond the browser hash checked above: every door mints a tag, a worker door has all four of the rest, a lambda door has none of them, and a test door is whatever the test made
 	return {
 		row_tick: now,
@@ -1294,6 +1296,7 @@ function _ledgerRow(e, now) {//check one record and shape it as a ledger_table r
 		provider_text: provider,
 		hash_text: hash,
 		tag_text: tag,
+		duration,
 		json,
 	}
 }

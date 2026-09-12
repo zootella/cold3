@@ -1,0 +1,14 @@
+-- Expand phase of duration: the milliseconds a dealing with a third party took, on the row that
+-- closes its pair. The closing row has carried this in json since the pairs arrived, and it becomes a
+-- column because we will filter and take percentiles over it, SQL math the planner does well over a
+-- real column and badly over a json path, the same reason delay_table keeps its slots numeric. -1
+-- means the row timed nothing, the sentinel report.js already writes into delay_table's unused slots,
+-- and it is the honest value on every row that isn't a close. It is a value rather than a blank, so
+-- the title carries no suffix. No index rides along: no query filters on a duration alone, and a
+-- percentile query filters by provider through ledger6 and aggregates from there.
+--
+-- The DEFAULT does two jobs at once. ADD COLUMN fills every existing row with it, and -1 is right for
+-- all of them, since none timed anything in this column; the closes written before keep their
+-- duration in json. And it covers the window between this push and the deploy, when the worker still
+-- running inserts rows that don't mention the cell. The contraction drops it.
+ALTER TABLE ledger_table ADD COLUMN duration BIGINT NOT NULL DEFAULT -1;

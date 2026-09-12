@@ -1381,7 +1381,7 @@ grid(async () => {//ledger: a dealing with a provider is a pair of rows, and the
 
 	await ledgerAddMany([//the shape both call sites write: the open thin, the close carrying the whole exchange
 		{action: 'Email.', event: 'Asked.',    provider: 'Twilio.', browserHash, tag: answered, json: {address: {f0: 'a@example.com'}}},
-		{action: 'Email.', event: 'Answered.', provider: 'Twilio.', browserHash, tag: answered, json: {address: {f0: 'a@example.com'}, duration: 230, task: {success: true}}},
+		{action: 'Email.', event: 'Answered.', provider: 'Twilio.', browserHash, tag: answered, duration: 230, json: {address: {f0: 'a@example.com'}, task: {success: true}}},
 		{action: 'Email.', event: 'Asked.',    provider: 'Twilio.', browserHash, tag: quiet,    json: {address: {f0: 'b@example.com'}}},
 		{action: 'Email.', event: 'Asked.',    provider: 'Amazon.', browserHash, tag: slow,     json: {address: {f0: 'c@example.com'}}},
 	])
@@ -1389,12 +1389,17 @@ grid(async () => {//ledger: a dealing with a provider is a pair of rows, and the
 	let opened = await queryGet('ledger_table', {event_text: 'Asked.'})
 	let closed = await queryGet('ledger_table', {event_text: 'Answered.'})
 	ok(opened.length == 3 && closed.length == 1)//three calls went out and one came back
+	ok(opened.every(r => r.duration == -1))//and none of the opens timed anything; -1 says so where a zero would read as an instant answer
 	let unanswered = opened.filter(o => !closed.some(c => c.tag_text == o.tag_text))//the pairs join by the tag margin
 	ok(unanswered.length == 2 && unanswered.every(r => r.json.task == undefined))//an open row carries no task; there was nothing yet to carry
 	ok(unanswered.filter(r => r.provider_text == 'Twilio.').length == 1)//and the provider column is what turns this into a question about one third party
 
 	let pair = await queryGet('ledger_table', {tag_text: answered})
-	ok(pair.length == 2 && pair.find(r => r.event_text == 'Answered.').json.task.success)//the closed pair reads as one story
+	let close = pair.find(r => r.event_text == 'Answered.')
+	ok(pair.length == 2 && close.json.task.success && close.duration == 230)//the closed pair reads as one story: what came back, and how long we waited
+
+	let tossed = false; try { await ledgerAdd({action: 'Email.', event: 'Answered.', provider: 'Twilio.', browserHash, duration: -2, json: {}}) } catch (e) { tossed = true }
+	ok(tossed)//-1 is the one value below zero the gate admits
 })
 
 grid(async () => {//envelope: the security checks in openEnvelope, which totp, otp, wallet, media, and the worker to lambda door all lean on; the test lives down here rather than beside the envelope functions because grid() itself must be defined first
