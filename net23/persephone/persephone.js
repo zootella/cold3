@@ -127,7 +127,7 @@ async function sendMessageAmazonEmail(task) {
 	const {ses} = await amazonDynamicImport()
 	const {SESClient, SendEmailCommand} = ses
 	let client = new SESClient({region: Key('amazon region, public')})
-	task.response = await client.send(new SendEmailCommand(task.request))
+	task.response = await client.send(new SendEmailCommand(task.request))//the aws sdk sets no request timeout, so a quiet provider waits for the lambda's own limit, and nothing runs after that
 	if (hasText(task.response.MessageId)) task.success = true
 }
 async function sendMessageTwilioEmail(task) {

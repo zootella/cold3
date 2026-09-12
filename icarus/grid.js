@@ -1055,7 +1055,7 @@ grid(async () => {//otp into credential: the full flow writes lifecycle rows for
 	ok(!('outcome' in mentioned.json) && challenged.tag_text == m.tag && challenged.provider_text == 'Amazon.' && proven.tag_text == m.tag)//a code went out, so the mention names no outcome; the challenge names the provider that carried it in its own column
 	ok(mentioned.tag_text == '')//the mention comes before any challenge exists, so it names none
 	ok((await queryGet('ledger_table', {tag_text: m.tag})).length == 2)//and the challenge gathers its own rows across the two clicks that made them, which is what the margin is for
-	ok((await _ledger(userTag, 'Email.', 'Sent.')).length == 0)//in simulation no message goes to the lambda, so there is no dealing with a provider to record
+	ok((await _ledger(userTag, 'Email.', 'Asked.')).length == 0 && (await _ledger(userTag, 'Email.', 'Answered.')).length == 0)//in simulation no message goes to the lambda, so there is no dealing with a provider to open or close
 })
 
 grid(async () => {//otp into credential: a challenge belongs to the user who started it
@@ -1371,6 +1371,30 @@ grid(async () => {//ledger: door_tag reaches every row a request writes, so two 
 
 	let tossed = false; try { await doorAsyncLocalStorageRun({...gridDoor, tag: ''}, () => ledgerAdd({action: 'Email.'})) } catch (e) { tossed = true }
 	ok(tossed)//a door without a tag can't write a row; the cell is never blank and never the caller's to choose
+})
+
+grid(async () => {//ledger: a dealing with a provider is a pair of rows, and the query that matters is the one that finds an open with no close
+	let {clear} = await getDatabase()
+	await clear('ledger_table')
+	let browserHash = await hashText('a browser')
+	let answered = Tag(), quiet = Tag(), slow = Tag()//one the provider answered, one it never did, one still in flight; the last two look the same in the table
+
+	await ledgerAddMany([//the shape both call sites write: the open thin, the close carrying the whole exchange
+		{action: 'Email.', event: 'Asked.',    provider: 'Twilio.', browserHash, tag: answered, json: {address: {f0: 'a@example.com'}}},
+		{action: 'Email.', event: 'Answered.', provider: 'Twilio.', browserHash, tag: answered, json: {address: {f0: 'a@example.com'}, duration: 230, task: {success: true}}},
+		{action: 'Email.', event: 'Asked.',    provider: 'Twilio.', browserHash, tag: quiet,    json: {address: {f0: 'b@example.com'}}},
+		{action: 'Email.', event: 'Asked.',    provider: 'Amazon.', browserHash, tag: slow,     json: {address: {f0: 'c@example.com'}}},
+	])
+
+	let opened = await queryGet('ledger_table', {event_text: 'Asked.'})
+	let closed = await queryGet('ledger_table', {event_text: 'Answered.'})
+	ok(opened.length == 3 && closed.length == 1)//three calls went out and one came back
+	let unanswered = opened.filter(o => !closed.some(c => c.tag_text == o.tag_text))//the pairs join by the tag margin
+	ok(unanswered.length == 2 && unanswered.every(r => r.json.task == undefined))//an open row carries no task; there was nothing yet to carry
+	ok(unanswered.filter(r => r.provider_text == 'Twilio.').length == 1)//and the provider column is what turns this into a question about one third party
+
+	let pair = await queryGet('ledger_table', {tag_text: answered})
+	ok(pair.length == 2 && pair.find(r => r.event_text == 'Answered.').json.task.success)//the closed pair reads as one story
 })
 
 grid(async () => {//envelope: the security checks in openEnvelope, which totp, otp, wallet, media, and the worker to lambda door all lean on; the test lives down here rather than beside the envelope functions because grid() itself must be defined first

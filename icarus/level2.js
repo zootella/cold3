@@ -516,14 +516,14 @@ export async function fetchLambda({from, route, action, body = {}}) {//fetch to 
 	if (from == 'Worker.') body.envelope = await sealEnvelope('Network23.', Limit.handoff, {browserHash: getDoor().browserHash, tag: getDoor().tag})//workers prove identity with a sealed envelope; pages can't (no server key), so each page->lambda route handles its own auth. the letter carries the browser the worker is serving and the tag of the request it is serving, so the rows the lambda writes name the browser and gather with the worker's the way its own rows do
 
 	const f = $fetch//used from Nuxt front end or Nuxt back end, either way, we always have Nuxt's $fetch
-	return await f(lambda23(route), {method: 'POST', body})
+	return await f(lambda23(route), {method: 'POST', body})//no timeout of ours; the lambda's own limit in serverless.yml is what ends a quiet call
 }
 export async function fetchProvider({url, options}) {//from a worker or lambda, fetch to a third-party REST API
 	checkUrl(url)
 	checkText(options.method)//must explicitly indicate method
 
 	const f = typeof $fetch == 'function' ? $fetch : ofetch//worker has Nuxt's $fetch; lambda uses ofetch directly, same underlying module
-	return await f(url, options)//f is $fetch in worker, ofetch in lambda, and both throw on a non-2XX response code
+	return await f(url, options)//f is $fetch in worker, ofetch in lambda, and both throw on a non-2XX response code; no timeout unless the provider imposes one
 }
 
 export function lambda23(route) {//get the url of a Network 23 lambda function route, like '/message' or '/upload', running cloud or local

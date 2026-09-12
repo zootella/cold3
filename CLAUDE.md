@@ -5,8 +5,9 @@ README.md maps the workspaces and the commands that build, test, and deploy them
 ## Read the style guide
 
 @./style.md
+@./style.notes.md
 
-The guide above governs everything written here: code, comments, and essays alike. Read it before writing any of them, rather than after a review catches something.
+The guide above governs everything written here: code, comments, and essays alike, and style.notes.md is its draft addendum, holding rules on their way in. Read both before writing any of them, rather than after a review catches something.
 
 ## Planning documents
 
@@ -24,7 +25,7 @@ Plan in the relevant planning document first, then write the code. Run `pnpm tes
 
 ### The review cycle
 
-After you code, expect the user to run `git add -N .`, then seal, then make diff.diff. The user deliberately leaves out files that don't need review, so what diff.diff shows is the scope of the review, and what it leaves out is not. Then come several turns of the user asking questions and suggesting improvements, with more changes by both of you, followed by another seal, another diff.diff, and another review, until it settles down.
+When the coding is done, say so and ask for the seal, with the ledger emoji 📒 in your message so the request stands out the way the pushpin and the cloud do. Then expect the user to run `git add -N .`, then seal, then make diff.diff. The user deliberately leaves out files that don't need review, so what diff.diff shows is the scope of the review, and what it leaves out is not. Then come several turns of the user asking questions and suggesting improvements, with more changes by both of you, followed by another seal, another diff.diff, and another review, until it settles down.
 
 Through these turns, make small clear changes as you see them without asking: a typo, a comment that says something false, a nearby bug. List each in your recap so the review knows where to look, and ask first when you're unsure or the change is large. A real problem, like a variable referenced out of scope, gets fixed the turn you find it whatever diff.diff's scope says, and leads your report rather than trailing it.
 
