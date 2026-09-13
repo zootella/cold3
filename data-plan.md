@@ -68,7 +68,7 @@ None of this happens at once. Each table changes in its own pass, on the expansi
 
 ## What this direction still has to answer
 
-Each of these now has a recommended answer in ledgerathon.md or hideless.md, the sprints planned September 7, 2026 to carry the direction out; the paragraphs below stay as the statement of the questions.
+Each of these now has an answer: the ledgerathon's stand in the code, in the charter essay above ledger_table in level3, and the vocabulary's in hideless.md, the sprint planned September 7, 2026 that carries the direction out; the paragraphs below stay as the statement of the questions.
 
 **The two writes cannot be atomic.** PostgREST does not offer transactions, and the Supabase API has no way to send two statements in one call — the long-standing note about this in the design file remains true. So a mutation and its ledger row are two separate round trips, and the direction has to say which goes first and what it means when the second one fails. The standing assumption in our design notes is that neighboring database calls in a worker are not interleaved by anything else, which is what makes the pair workable in practice, but the failure case deserves a stated answer rather than an inherited one.
 

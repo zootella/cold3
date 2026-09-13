@@ -62,7 +62,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 	// 🟠 name and password
 	} else if (action == 'SignUpAndSignInTurnstile.') {
-		//create new user with three credentials
+		//create new user with three credentials; each set function writes its own ledger row, and there is no Account. Created. row, because choosing a name is a bootstrap standing in for account creation until that flow is designed
 		let userTag = Tag()
 		let v = await credentialNameSet({userTag, raw1: body.name1, raw2: body.name2})
 		if (!v) return {success: false, outcome: 'NameNotAvailable.'}

@@ -55,6 +55,8 @@ The rule covers server code. Neither platform tears a page down this way, and a 
 
 One consequence is worth naming, because it is why the rule matters more than it used to. A row we write before an outside call is how we find out that the call never came back: when a provider hangs until the platform kills us, that row is the only thing that survives. An unawaited row would not even be that.
 
+We set no timeouts of our own around those calls, decided September 12, 2026. A limit would encode one platform's behavior: viem gives the chain call ten seconds on its own, the message lambda has the ninety serverless.yml sets, and Cloudflare holds a worker's subrequest as long as the browser holds the connection. The unanswered opening row is the instrument. The ledgerathon's soak counts Asked. rows with no Answered., and a limit, if one is ever set, gets chosen from that count rather than from a guess, in a home that isolates the platform knowledge the way the doors do.
+
 ## How a table is shaped
 
 Three margin columns start every table, even one with no use for them: `row_tag`, a globally unique tag and the primary key, though we never query on it; `row_tick`, set when the row is added; and `hide`, 0 to start and nonzero to leave the row out of ordinary use. Beneath them, example_table carries one column of each remaining kind, which makes it the working reference as well as the sandbox grid tests write in.

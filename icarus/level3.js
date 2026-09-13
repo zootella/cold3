@@ -1179,6 +1179,24 @@ CREATE INDEX example1 ON example_table (hide, row_tick DESC);  -- index to get v
 //               |___/                                   
 
 /*
+The charter: what ledger_table is for, and the rules every writer follows
+
+The ledger documents three kinds of thing, each completely, everything we know at the moment and nothing less. Changes of state inside the application: Alice changes her password, removes an email, adds a phone, kept so a later version of the site can act on the history and staff can see what an account went through. Every dealing with a third party: we asked Twilio this and they answered this, with the tick and the duration on each, so a query can show that a send always took five seconds until the day it took fifteen. And records around addresses that could be contested between users, two people each believing they are alice.k@gmail.com, or someone scanning by misusing a credential flow: the radar that shows where the system is being pushed, so a vulnerability is understood from its record long after.
+
+Every mutation of a live table writes its ledger row, and the function that mutates is the function that records. Not the endpoint above it, so a new caller cannot forget, and a grid test that walks the function proves the row. Every mutating function in this file has the same three parts, top to bottom: the checks on its parameters, the table change, and the ledger write, both reading the same locals. The row records what the function was asked to do, from the values it was given, never what the table held before or after, so the two calls stay independent; history is the rows read in order, and the sessions a sign-out ended are the Proven. rows above it. A refusal gets its row too, since it sits beside table changes that have theirs and is often the clearest picture of an attack; the exceptions are paths where nobody else is involved and nothing is contested, like a wrong first code during totp enrollment or a name that is taken.
+
+A row is complete, and duplicates nothing. Complete: an address or a name in all three forms under a key named for what it is, the guess that was typed, the tag of the challenge, and for a dealing with a provider the whole object we handed them and the whole object they handed back, however large, the otp send's message text included, because the row is the record of what we did. Never a secret: no password hash, no totp secret; a wallet nonce rides because the page holds it in the clear anyway. Not duplicated: a cell with no natural value stays blank, and nothing is hashed or invented to fill a column. A dealing with a third party is its own row, separate from the row about the user's data, so a query by provider finds the dealings without the user's rows in the way, and a query by user finds the user's rows without the provider's payloads.
+
+A dealing gets two rows, Asked. before the call and Answered. after, joined by the challenge or nonce in tag_text, with how long we waited in duration on the close. A provider that never answers leaves the open row with no close, and counting those is how we learn how often that happens. The instrument needs no timeout of ours, which is why none is set. For the message send the wait spans the hop through our lambda, cold start included, and the provider's own time rides inside the task the close carries.
+
+PostgREST has no transactions, so a table change and its ledger row are two round trips, one after the other: the table change first, then the ledger write, so a row never says something happened that didn't. Nothing special handles a failure. A failed call throws to the top gate, and if it was the ledger write, the change stood and its row is missing, which is the gap hideless makes visible once rows are deleted rather than hidden. No retry, no compensating write, no try around either call. The two run in sequence rather than at once, because firing two Supabase calls together from one request has caused delays and 409s. If a missing row ever matters, a Postgres function called through supabase.rpc runs inside one transaction, the one path in the stack that could make the pair atomic. The awaited write costs on the order of a hundred milliseconds on every path that mutates, accepted because those paths are rare and human-paced.
+
+A record table is never mutated, and a record gets no ledger row: ledger_table, delay_table, and trail_table are appended to, and a wrong record is corrected by a later record. An old row is never migrated to the current shape either. The ledger is a notebook: a row keeps the shape the code of its day gave it, wrapper_hash names that code, and a reader who meets an old shape looks the build up rather than expecting the table to speak one language. The ledger is the history; a live table's own history, the hidden rows credential_table keeps today, is a duplicate with less in it, and hideless removes it.
+
+Nothing in production reads this table yet. The grid tests read it with queryGet, filtered by action, user, hash, or tag, and their assertions ride the flow tests beside the credential rows rather than a suite of their own. A ledgerGet family arrives with the first staff page or robin query that wants one.
+*/
+
+/*
 Provenance: who says so, for every cell in a ledger row
 
 Several parties speak in every row here, and which cell a fact sits in fixes who said it. A reader who knows the ladder below can look at any key and value, know where it came from, and know who could have faked it. The ladder runs from the weakest word to the strongest.
@@ -1411,7 +1429,7 @@ export async function settingRead(name, defaultValue) {
 	return row['setting_value_text']
 }
 
-export async function settingWrite(name, value) {
+export async function settingWrite(name, value) {//no ledger row: settings_table holds the demo counter and nothing about a user
 	let valueText = value+''
 	checkText(name); checkTextOrBlank(valueText)
 	let row = await queryUpdateCells({
