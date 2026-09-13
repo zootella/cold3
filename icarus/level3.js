@@ -1228,7 +1228,7 @@ CREATE TABLE ledger_table (
 	action_text    TEXT      NOT NULL,  -- the subject, like "Email."; the one of the three every row names
 	event_text     TEXT      NOT NULL,  -- the verb, like "Challenged."; blank when the action says it all
 	provider_text  TEXT      NOT NULL,  -- the third party we dealt with, like "Twilio."; blank when we dealt with none
-	duration       BIGINT    NOT NULL DEFAULT -1,  -- the milliseconds a dealing with that third party took, on the row that closes it; -1 on every other row, which timed nothing. the default is scaffolding for the deploy window, and the contraction drops it
+	duration       BIGINT    NOT NULL,  -- how long we waited on that third party, in milliseconds, on the row that closes the pair; -1 on every other row
 
 	hash_text      TEXT      NOT NULL,  -- the hash of the one thing this row is about, like an address, gathering every record about it, or for Hit. the hash of the hour and the visit that ledger7 keeps unique; blank when the row is about no such thing
 	tag_text       TEXT      NOT NULL,  -- the tag of the one thing this row is about, like the otp challenge a code belongs to, the way hash_text above holds its one hash; blank when the row is about no such thing
@@ -1275,7 +1275,7 @@ function _ledgerRow(e, now) {//check one record and shape it as a ledger_table r
 		userTag = '',//the user, or blank if nobody's identified
 		hash = '',//the row's one meaningful hash when what happened was about something we can name that way, so every record about that thing is an indexed lookup; blank when it wasn't
 		tag = '',//the row's one meaningful tag when what happened was about something we name that way, like the otp challenge a code belongs to; blank when it wasn't, which is the common case
-		duration = -1,//the milliseconds a dealing with a third party took, on the row that closes one; -1 everywhere else
+		duration = -1,//how long we waited on a third party, in milliseconds, on the row that closes the pair; -1 everywhere else
 		json = {},//everything else about what happened, kept as data a later reader can query and read back
 		browser = door.browser,//the browser's account of itself, the door's agent string unless the record extends it, as a hit does with what the page said about its graphics
 	} = e
