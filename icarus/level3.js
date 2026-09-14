@@ -953,6 +953,7 @@ export async function credentialBrowserRemove({userTag}) {//sign this user out e
 //  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_| |_| |_|\__,_|_| |_| |_|\___|
 //                                                                            
 
+//name: one Proven. row per user, edited in place when it changes and deleted when removed; f0 and f2 are unique across users, which credentialNameCheck keeps by reading first
 //lookup between user tags and names to render a profile page, let the user see their name, or choose or change it
 export async function credentialNameGet({//returns false not found, or {userTag, name} with all three valid name forms
 	//provide any one of these:
@@ -982,9 +983,9 @@ export async function credentialNameSet({userTag, raw1, raw2}) {
 	checkTag(userTag)
 	let v = await credentialNameCheck({raw1, raw2})
 	if (!v) return false
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Name.', event_text: 'Proven.'})
-	await credentialSet({userTag, type: 'Name.', event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2})
-	await ledgerAdd({action: 'Name.', event: 'Proven.', userTag, json: {name: {f0: v.f0, f1: v.f1, f2: v.f2}}})//the three forms taken; the name this replaced, if any, is the earlier row
+	let rows = await queryUpdate('credential_table', {where: {hide: 0, user_tag: userTag, type_text: 'Name.', event_text: 'Proven.'}, set: {f0_text: v.f0, f1_text: v.f1, f2_text: v.f2}})//change the name she has by editing its row, all three forms at once; hide: 0 keeps an old hidden row out of it while credential_table still has the column
+	if (!rows.length) await credentialSet({userTag, type: 'Name.', event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2})//she had none, so this is her first, or her first since a remove
+	await ledgerAdd({action: 'Name.', event: 'Proven.', userTag, json: {name: {f0: v.f0, f1: v.f1, f2: v.f2}}})//the three forms taken; the name this replaced, if any, is in the ledger row before this one
 	return v
 }
 
@@ -1006,7 +1007,7 @@ export async function credentialNameCheck({//returns false taken or not valid, o
 //remove a user's name credential, freeing it for others
 export async function credentialNameRemove({userTag}) {
 	checkTag(userTag)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Name.', event_text: 'Proven.'})
+	await queryDelete('credential_table', {user_tag: userTag, type_text: 'Name.'})//every Name. row of hers, an old hidden one included: absence is the answer
 	await ledgerAdd({action: 'Name.', event: 'Removed.', userTag})
 }
 

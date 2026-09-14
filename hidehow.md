@@ -18,19 +18,13 @@ One question the finished migration left open: whether trail_table's expiration 
 
 One Proven. row per user, and no flow in flight. Today a set hides the old row and inserts the new one, a remove hides, and at most one row is ever visible. After, a set edits the row in place or inserts when there is none, a remove deletes, and at the column drop a unique index makes the one-per-user rule the database's own. These chapters teach the edit-or-insert and delete pattern, the unique index dividend, and the hottest read in the application, in that order.
 
-## Password.
-
-One Proven. row per user: hash_text holds the hash the page computed, and json holds the cycles it used. Read by userTag for the snapshot, for the cycles a sign-in page fetches first, for the current-password check before a change, and by credentialPasswordVerify at sign-in, which writes a Refused. ledger row on a miss and touches no table. Set hides the user's Proven. row and inserts the new one, so at most one is ever visible. Remove hides it. Grid tests cover set, change, verify, and remove, sign-in misses, and the sign-up and close account flows.
-
-**Hidden today:** yes, by Set and Remove, both filtering the user, Password., and Proven., plus close account. After: Set edits the hash and cycles in place or inserts when the user has none, Remove deletes, and a unique index holds one Password. row per user.
-
-**The chapter.** Set becomes an update of the user's visible Proven. row, writing hash_text and json together, and an insert through credentialSet only when the update found no row; its where clause names hide: 0 itself, so an old hidden row from before the sprint is never the one edited, and that cell is what the column drop removes. Remove becomes a delete of every Password. row of the user's, hidden ones included, since absence is the answer. Get, Verify, the endpoint branches, and all three ledger rows stay exactly as they are. The password grid test gains the assertions that prove the shape: the row after a change carries the same row_tag as the row before it, the count of every row the user has, hidden or not, is one after the change and zero after the remove. Close account keeps hiding for now and converts in its own pass.
-
 ## Name.
 
 One Proven. row per user holding the three forms: f0 normalized for the route and for matching, f1 the route's face, f2 the display name. Read by userTag for the snapshot and the totp app label, by f0 and f2 in credentialNameCheck to see whether a name is taken, by f0 at sign-in, and by part1 in the render endpoint, the public lookup that turns a profile route into a user. Set checks availability, hides the user's old row, and inserts, both patterns at once. Remove hides. Uniqueness of f0 and f2 across every user is read-then-check only, and nothing in the database enforces it. Grid tests cover get and collisions, remove, the change that frees the old name, and sign-up.
 
 **Hidden today:** yes, by Set and Remove, plus close account. After: Set edits the three forms in place or inserts, Remove deletes, and unique indexes on f0 and f2 among Name. rows close the race the check leaves open.
+
+**The chapter.** The same shape as Password. Set becomes an update of the user's visible Proven. row, writing the three forms together, and an insert through credentialSet only when the update found no row; its where clause names hide: 0 itself. Remove becomes a delete of every Name. row of the user's. Get in all four of its lookups, credentialNameCheck, the endpoint branches, the render endpoint's public lookup, and both ledger rows stay as they are. The change test proves the row survives a change by its row_tag and that the user has exactly one row, hidden or not, and the remove test proves a remove leaves none. Two users racing for one name is the race the note in database-stack.md describes, harmful and left to the unique index at the column drop.
 
 ## Browser.
 

@@ -857,6 +857,7 @@ grid(async () => {//name: remove frees name for another user
 	ok((await credentialNameSet({userTag: user2, raw1: 'taken', raw2: 'Taken'})) == false)//user2 blocked
 	await credentialNameRemove({userTag: user1})//user1 removes
 	ok((await credentialNameGet({userTag: user1})) == false)//user1 has no name
+	ok(await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: user1}) == 0)//deleted, not hidden
 	let v = await credentialNameSet({userTag: user2, raw1: 'taken', raw2: 'Taken'})//user2 can take it
 	ok(v.ok && v.f0 == 'taken')
 })
@@ -867,10 +868,14 @@ grid(async () => {//name: change frees old name for others (the Bob story)
 	let user2 = Tag()
 	let v1 = await credentialNameSet({userTag: user1, raw1: 'Bob', raw2: 'Bob'})//user1 takes "bob"
 	ok(v1.ok && v1.f0 == 'bob')
+	let first = (await credentialRows({user_tag: user1, type_text: 'Name.'}))[0]//the one row user1 has
 	ok((await credentialNameSet({userTag: user2, raw1: 'Bob', raw2: 'Bob'})) == false)//user2 can't take "bob"
 	let v2 = await credentialNameSet({userTag: user1, raw1: 'Super-Bob', raw2: 'Super Bob'})//user1 changes to "super-bob"
 	ok(v2.ok && v2.f0 == 'super-bob')
 	ok((await credentialNameGet({userTag: user1})).name.f0 == 'super-bob')//user1 now has super-bob
+	let rows = await credentialRows({user_tag: user1, type_text: 'Name.'})
+	ok(rows.length == 1 && rows[0].row_tag == first.row_tag)//the same row, edited in place, rather than a second one
+	ok(await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: user1}) == 1)//and no hidden one behind it
 	let ledger = await _ledger(user1, 'Name.')//the first name and the change; the name a change replaced is the earlier row
 	ok(ledger.length == 2 && ledger.some(r => r.json.name.f0 == 'bob') && ledger.find(r => r.json.name.f0 == 'super-bob').json.name.f2 == 'Super Bob' && ledger.every(r => r.hash_text == ''))
 	ok((await _ledger(user2, 'Name.')).length == 0)//user2's refused try wrote nothing: names are public, so a taken name is no signal
