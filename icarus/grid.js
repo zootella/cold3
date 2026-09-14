@@ -208,13 +208,16 @@ grid(async () => {//password: set, change, verify single active, remove
 	ok((await credentialPasswordGet({userTag})) == false)//no password yet
 	await credentialPasswordSet({userTag, hash: hash1, cycles: 100})//set initial
 	ok((await credentialPasswordGet({userTag})).hash == hash1)//verify set
+	let first = (await credentialRows({user_tag: userTag, type_text: 'Password.'}))[0]//the one row she has
 	await credentialPasswordSet({userTag, hash: hash2, cycles: 200})//change password
 	let result = await credentialPasswordGet({userTag})
 	ok(result.hash == hash2 && result.cycles == 200)//verify changed
-	let rows = await credentialRows({user_tag: userTag, type_text: 'Password.', event_text: 'Proven.'})
-	ok(rows.length == 1)//only one active password after change
+	let rows = await credentialRows({user_tag: userTag, type_text: 'Password.'})
+	ok(rows.length == 1 && rows[0].row_tag == first.row_tag)//the same row, edited in place, rather than a second one
+	ok(await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag}) == 1)//and no hidden one behind it
 	await credentialPasswordRemove({userTag})
 	ok((await credentialPasswordGet({userTag})) == false)//now gone
+	ok(await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag}) == 0)//deleted, not hidden
 
 	let ledger = await _ledger(userTag, 'Password.')//three rows: the first set, the change, the remove; the cycles ride and the hash never does
 	ok(ledger.length == 3 && ledger.filter(r => r.event_text == 'Removed.').length == 1 && ledger.some(r => r.json.cycles == 100) && ledger.some(r => r.json.cycles == 200))

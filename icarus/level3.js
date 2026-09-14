@@ -383,6 +383,7 @@ and you now realize: []browsers a user is signed in to!
 //  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_| | .__/ \__,_|___/___/ \_/\_/ \___/|_|  \__,_|
 //                                                |_|                                          
 
+//password: one Proven. row per user, edited in place when it changes and deleted when removed; the hash the page computed rides hash_text, and the cycles it used ride json
 export async function credentialPasswordGet({userTag}) {
 	checkTag(userTag)
 	let rows = await credentialRows({user_tag: userTag, type_text: 'Password.', event_text: 'Proven.'})
@@ -391,14 +392,14 @@ export async function credentialPasswordGet({userTag}) {
 	return false//no current password
 }
 export async function credentialPasswordSet({userTag, hash, cycles}) {
-	checkTag(userTag); checkInt(cycles, 1)//the note holds cycles as a real number, so the boundary checks it is one
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Password.', event_text: 'Proven.'})
-	await credentialSet({userTag, type: 'Password.', event: 'Proven.', hash, json: {cycles}})
+	checkTag(userTag); checkHash(hash); checkInt(cycles, 1)//the note holds cycles as a real number, so the boundary checks it is one
+	let rows = await queryUpdate('credential_table', {where: {hide: 0, user_tag: userTag, type_text: 'Password.', event_text: 'Proven.'}, set: {hash_text: hash, json: {cycles}}})//change the password she has by editing its row; hide: 0 keeps an old hidden row out of it while credential_table still has the column
+	if (!rows.length) await credentialSet({userTag, type: 'Password.', event: 'Proven.', hash, json: {cycles}})//she had none, so this is her first, or her first since a remove
 	await ledgerAdd({action: 'Password.', event: 'Proven.', userTag, json: {cycles}})//the ledger row after the credential row; the cycles ride, the hash never does
 }
 export async function credentialPasswordRemove({userTag}) {
 	checkTag(userTag)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Password.', event_text: 'Proven.'})
+	await queryDelete('credential_table', {user_tag: userTag, type_text: 'Password.'})//every Password. row of hers, an old hidden one included: absence is the answer
 	await ledgerAdd({action: 'Password.', event: 'Removed.', userTag})
 }
 
