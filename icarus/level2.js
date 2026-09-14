@@ -1677,7 +1677,7 @@ export async function getDatabase() {
 //  \__, |\__,_|\___|_|   \__, |  \___\___/|_| |_| |_|_| |_| |_|\___/|_| |_|
 //     |_|                |___/                                             
 
-//count how many rows have cellFind under titleFind, including hidden
+//count how many rows have cellFind under titleFind
 export async function queryCountRows({table, titleFind, cellFind}) {
 	checkQueryTitle(table); checkQueryCell(titleFind, cellFind)
 	const {database} = await getDatabase()
@@ -1689,7 +1689,7 @@ export async function queryCountRows({table, titleFind, cellFind}) {
 	if (error) toss('supabase', {error})
 	return count
 }
-//how many rows table has, including hidden
+//how many rows table has
 export async function queryCountAllRows({table}) {
 	checkQueryTitle(table)
 	const {database} = await getDatabase()
@@ -1701,14 +1701,13 @@ export async function queryCountAllRows({table}) {
 	return count
 }
 
-//get the most recent visible row with cell under title
+//get the most recent row with cell under title
 export async function queryTop({table, title, cell}) {
 	checkQueryTitle(table); checkQueryCell(title, cell)
 	const {database} = await getDatabase()
 	let {data, error} = (await database
 		.from(table)
 		.select('*')
-		.eq('hide', 0)
 		.eq(title, cell)
 		.order('row_tick', {ascending: false})
 		.limit(1)
@@ -1731,29 +1730,29 @@ function applyQueryCells(query, cells) {
 	return query
 }
 
-//get all the visible rows matching the given column values
+//get all the rows matching the given column values
 export async function queryGet(table, cells, options) {//cells is like {title1: 'cell1', title2: 'cell2', ...}; a plain-object value like json: {provider} filters properties inside that json column
 	checkQueryTitle(table); checkQueryCells(cells)
 	const {database} = await getDatabase()
-	let query = applyQueryCells(database.from(table).select('*').eq('hide', 0), cells)
+	let query = applyQueryCells(database.from(table).select('*'), cells)
 	if (options?.since) { checkInt(options.since); query = query.gte('row_tick', options.since) }//optionally filter by time
 	let {data, error} = await query.order('row_tick', {ascending: false})//send it to supabase
 	if (error) toss('supabase', {error})
 	return data
 }
-//get visible rows where below title the cell matches any of an array of search values
+//get rows where below title the cell matches any of an array of search values
 export async function queryGetAny({table, title, cells, since}) {//cells is like [cell1, cell2, ...]
 	checkQueryTitle(table); checkQueryTitle(title); if (!cells.length) toss('query', {table, title})
 	cells.forEach(cell => checkQueryCell(title, cell))
 	const {database} = await getDatabase()
-	let query = database.from(table).select('*').eq('hide', 0).in(title, cells)
+	let query = database.from(table).select('*').in(title, cells)
 	if (since) { checkInt(since); query = query.gte('row_tick', since) }
 	let {data, error} = await query.order('row_tick', {ascending: false})
 	if (error) toss('supabase', {error})
 	return data
 }
 
-//add the given cells to a new row in table, this adds row_tag, row_tick, and hide for you
+//add the given cells to a new row in table, this adds row_tag and row_tick for you
 export async function queryAddRow({table, row}) {
 	await queryAddRows({table, rows: [row]})
 }
@@ -1768,7 +1767,7 @@ export async function queryAddRows({table, rows}) {
 	if (error) toss('supabase', {error})
 }
 
-//hide visible rows matching the given column values, changing hide from 0 to hideSet (default 1)
+//set hide from 0 to hideSet, default 1, on the rows matching cells; credential_table alone still has the column, and this alone sets it
 export async function queryHide(table, cells, options) {//cells filters the same way queryGet's does, json paths included
 	let hideSet = options?.hideSet || 1
 	checkQueryTitle(table); checkQueryCells(cells)
@@ -1778,15 +1777,15 @@ export async function queryHide(table, cells, options) {//cells filters the same
 	if (error) toss('supabase', {error})
 }
 
-//edit the visible rows where finds, writing every cell in set into each of them; the two are named so a caller can't swap them
+//edit the rows where finds, writing every cell in set into each of them; the two are named so a caller can't swap them
 //returns the rows as they stand after the edit, an empty array when nothing matched; a json cell in set replaces the column whole, it never merges
 export async function queryUpdate(table, {where, set}) {//where filters the same way queryGet's cells do, json paths included; set is like {title1: 'cell1', title2: 'cell2', ...}
 	checkQueryTitle(table); if (!isPlain(where) || !isPlain(set)) toss('use', {table, where, set})//a call in the old positional shape fails here, by name, rather than deeper down
 	checkQueryCells(where); checkQueryRow(set)
 	if (!Object.keys(where).length || !Object.keys(set).length) toss('query', {table, where, set})//no filter would edit every row in the table, and nothing to set would edit nothing; either is a confused caller
-	for (let title of ['row_tag', 'row_tick', 'hide']) if (title in set) toss('query', {table, set})//the margins are a row's identity, its clock, and its visibility, and none is edited here
+	for (let title of ['row_tag', 'row_tick', 'hide']) if (title in set) toss('query', {table, set})//a row's identity and its clock are never edited, and hide, where a table still has it, is queryHide's to set
 	const {database} = await getDatabase()
-	let query = applyQueryCells(database.from(table).update(set).eq('hide', 0), where)//among visible rows, as every reading helper filters
+	let query = applyQueryCells(database.from(table).update(set), where)
 	let {data, error} = await query.select()
 	if (error) toss('supabase', {error})
 	return data
@@ -1808,14 +1807,13 @@ export async function queryDelete(table, cells) {//cells filters the same way qu
 //  \__, |\__,_|\___|_|   \__, | |___/ .__/ \___|\___|_|\__,_|_|_/___\___|\__,_|
 //     |_|                |___/      |_|                                        
 
-//count how many visible rows with cell under title were added since the given tick count
+//count how many rows with cell under title were added since the given tick count
 export async function queryCountSince({table, title, cell, since}) {
 	checkQueryTitle(table); checkQueryCell(title, cell); checkInt(since)
 	const {database} = await getDatabase()
 	let {data, count, error} = (await database
 		.from(table)
 		.select('', {count: 'exact', head: true})//select blank, exact, head to count rows without getting row data
-		.eq('hide', 0)//visible rows only
 		.eq(title, cell)//with the given cell value
 		.gte('row_tick', since)//recorded on or since the given starting time
 	)
@@ -1832,14 +1830,13 @@ export async function queryAddRowIfHashUnique({table, row}) {
 	if (error && error.code != '23505') toss('supabase', {error})//23505 is the index refusing a duplicate, the quiet answer this helper exists for; anything else is a real failure
 }
 
-//get the most recent visible row with title1: cell1 and title2: a number greater than cell2GreaterThan, like 1 or 2 fine if you pass in 0
+//get the most recent row with title1: cell1 and title2: a number greater than cell2GreaterThan, like 1 or 2 fine if you pass in 0
 export async function queryTopEqualGreater({table, title1, cell1, title2, cell2GreaterThan}) {
 	checkQueryTitle(table); checkQueryCell(title1, cell1); checkQueryCell(title2, cell2GreaterThan)
 	const {database} = await getDatabase()
 	let {data, error} = (await database
 		.from(table)
 		.select('*')//retrieve the matching rows
-		.eq('hide', 0)//that are not hidden
 		.eq(title1, cell1)//have cell1 under title1
 		.gt(title2, cell2GreaterThan)//and under title2, a cell with a value greater than the given value
 		.order('row_tick', {ascending: false})//most recent first
@@ -1856,7 +1853,6 @@ export async function queryTopSinceMatchGreater({table, since, title1, cell1, ti
 	let {data, error} = (await database
 		.from(table)
 		.select('*')
-		.eq('hide', 0)//visible only
 		.eq(title1, cell1)//matching cell
 		.gte('row_tick', since)//recent
 		.gt(title2, cell2GreaterThan)
@@ -1878,7 +1874,6 @@ function checkQueryFillRows(rows) {
 	rows.forEach(row => {//fill in any missing defaults for the margin columns
 		if (!row.row_tag)  row.row_tag = Tag()
 		if (!row.row_tick) row.row_tick = t
-		if (!row.hide)     row.hide = 0//sets 0 if already set, but that's fine
 	})
 	rows.forEach(row => checkQueryRow(row))
 }

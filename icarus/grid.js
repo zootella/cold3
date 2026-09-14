@@ -16,10 +16,10 @@ decryptKeys, getDatabase, sqlList, setTestDatabase,
 sealEnvelope, openEnvelope, openBrownie, sealBrownie,
 originDomain,
 doorAsyncLocalStorageRun,
-queryGet, queryGetAny, queryAddRow, queryAddRows, queryHide, queryUpdate, queryDelete, queryTop, queryCountRows, queryCountAllRows,
+queryGet, queryGetAny, queryAddRow, queryAddRows, queryUpdate, queryDelete, queryTop, queryCountRows, queryCountAllRows,
 } from './level2.js'
 import {
-ledgerAdd, ledgerAddMany, otpConstants, recordHit,
+ledgerAdd, ledgerAddMany, otpConstants, recordHit, credentialRows,
 trailAdd, trailAddMany, trailCount, trailGet, trailGetAny, trailRecent,
 credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameGet, credentialNameSet, credentialNameRemove, credentialNameCheck,
@@ -56,13 +56,13 @@ grid(async () => {//otp: sanity check
 	ok(m.tag && m.answer)//the code went out, with the tag that names the challenge
 	let live = await _otpLive(userTag, 'Email.')
 	ok(live.length == 1 && live[0].tag == m.tag && live[0].address.f0 == v.f0 && live[0].start > 0)//the challenge is a row, and the snapshot projects it as tag, start, and address, never the answer
-	let row = (await queryGet('credential_table', {user_tag: userTag, event_text: 'Challenged.'}))[0]
+	let row = (await credentialRows({user_tag: userTag, event_text: 'Challenged.'}))[0]
 	ok(row.json.tag == m.tag && row.json.provider == 'Amazon.' && row.hash_text == '')//the row carries the tag beside the provider, and binds to no browser
 
 	let enterResult = await credentialOtpEnter({tag: m.tag, guess: m.answer, userTag})
 	ok(enterResult.success)
 	ok((await _otpLive(userTag, 'Email.')).length == 0)//the challenge closed: hidden, so it's found by nobody and painted for nobody
-	ok((await queryGet('credential_table', {user_tag: userTag, event_text: 'Proven.'}))[0].json.tag == m.tag)//and the proof names the challenge that proved it
+	ok((await credentialRows({user_tag: userTag, event_text: 'Proven.'}))[0].json.tag == m.tag)//and the proof names the challenge that proved it
 })
 grid(async () => {//otp: two addresses in flight at once, alice's email and phone
 	let userTag = Tag()
@@ -91,7 +91,7 @@ grid(async () => {//otp: code expires after 20 minutes
 	ok(!enterResult.success)
 	ok(enterResult.outcome == 'Expired.')
 	ok((await _otpLive(userTag, 'Email.')).length == 0)//and the snapshot no longer offers the stale challenge, though its row stays visible in the table
-	ok((await queryGet('credential_table', {user_tag: userTag, event_text: 'Challenged.'})).length == 1)
+	ok((await credentialRows({user_tag: userTag, event_text: 'Challenged.'})).length == 1)
 })
 grid(async () => {//otp: 3 wrong guesses then correct works; 4 wrong exhausts code
 	let userTag = Tag()
@@ -211,7 +211,7 @@ grid(async () => {//password: set, change, verify single active, remove
 	await credentialPasswordSet({userTag, hash: hash2, cycles: 200})//change password
 	let result = await credentialPasswordGet({userTag})
 	ok(result.hash == hash2 && result.cycles == 200)//verify changed
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Password.', event_text: 'Proven.'})
+	let rows = await credentialRows({user_tag: userTag, type_text: 'Password.', event_text: 'Proven.'})
 	ok(rows.length == 1)//only one active password after change
 	await credentialPasswordRemove({userTag})
 	ok((await credentialPasswordGet({userTag})) == false)//now gone
@@ -248,7 +248,7 @@ grid(async () => {//totp: set, re-enroll, verify single active, remove
 	ok((await credentialTotpGet({userTag})).secret == 'SECRETAAAAAAAAA1')//verify enrolled
 	await credentialTotpSet({userTag, secret: 'SECRETBBBBBBBBB2'})//re-enroll (new phone)
 	ok((await credentialTotpGet({userTag})).secret == 'SECRETBBBBBBBBB2')//verify new secret
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.', event_text: 'Proven.'})
+	let rows = await credentialRows({user_tag: userTag, type_text: 'Totp.', event_text: 'Proven.'})
 	ok(rows.length == 1)//only one active totp after re-enroll
 	await credentialTotpRemove({userTag})
 	ok((await credentialTotpGet({userTag})).secret == '')//now gone
@@ -279,7 +279,7 @@ grid(async () => {//totp verify: a right code proves the app again, a wrong one 
 	ok(tossed)//a user who isn't enrolled can't be here; the page ghosts the control
 })
 async function _totpStarts(userTag) {//a user's visible starts, newest first, at most one; the enroll tests read the secret from the row the way her authenticator app holds it from the qr code
-	return await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.', event_text: 'Challenged.'})
+	return await credentialRows({user_tag: userTag, type_text: 'Totp.', event_text: 'Challenged.'})
 }
 grid(async () => {//totp enroll: the whole flow, secret to saved enrollment, with a code the secret really makes
 	let {clear} = await getDatabase()
@@ -376,7 +376,7 @@ grid(async () => {//totp enroll: finishing hides the start, so a removed enrollm
 	await credentialTotpRemove({userTag})//and minutes later removes the enrollment, well inside the start's twenty minutes
 	let snapshot = await credentialTotpGet({userTag})
 	ok(snapshot.secret == '' && snapshot.enrollment == false)//not enrolled, and not offered the qr code of the enrollment she just discarded, because enroll2 hid the start when it finished
-	ok((await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.'})).length == 0)//nothing visible
+	ok((await credentialRows({user_tag: userTag, type_text: 'Totp.'})).length == 0)//nothing visible
 	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 2)//and both rows are still in the table as evidence, hidden
 
 	await credentialTotpEnroll1({userTag})//she starts once more, and this time walks away
@@ -499,7 +499,7 @@ grid(async () => {//wallet prove: the whole flow, nonce to saved proof, with a r
 	let userTag = Tag()
 	let account = await _walletTestAccount('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d')
 	let f0 = account.address.toLowerCase()//the matching form, on every ledger row about this address
-	const challenges = async () => await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event_text: 'Challenged.'})//her visible challenges
+	const challenges = async () => await credentialRows({user_tag: userTag, type_text: 'Ethereum.', event_text: 'Challenged.'})//her visible challenges
 
 	let prove = await credentialWalletProve1({userTag, address: account.address, connector: 'Injected.'})//step 1: the page asks for a nonce
 	ok(!prove.outcome && hasText(prove.nonce))
@@ -510,7 +510,7 @@ grid(async () => {//wallet prove: the whole flow, nonce to saved proof, with a r
 	let signed = await _walletTestSign({account, nonce: prove.nonce})//the wallet signs what the page built
 	ok((await credentialWalletProve2({userTag, address: account.address, ...signed})).ok)
 	ok((await credentialWalletGet({userTag}))[0] == account.address)//step 2 checked the signature and saved the proof
-	ok((await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event_text: 'Proven.'}))[0].json.nonce == prove.nonce)//and the proof names the challenge that proved it
+	ok((await credentialRows({user_tag: userTag, type_text: 'Ethereum.', event_text: 'Proven.'}))[0].json.nonce == prove.nonce)//and the proof names the challenge that proved it
 	ok((await challenges()).length == 0)//and spent the nonce: the challenge is hidden
 
 	let ledger = await _ledger(userTag, 'Ethereum.')//the three rows the flow leaves: the mention, the challenge, and the proof
@@ -570,7 +570,7 @@ grid(async () => {//wallet prove: two tabs proving the same address each hold th
 	await clear('credential_table')
 	let userTag = Tag()
 	let account = await _walletTestAccount('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d')
-	const challenges = async () => await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event_text: 'Challenged.'})
+	const challenges = async () => await credentialRows({user_tag: userTag, type_text: 'Ethereum.', event_text: 'Challenged.'})
 
 	let tab1 = await credentialWalletProve1({userTag, address: account.address, connector: 'Injected.'})
 	let tab2 = await credentialWalletProve1({userTag, address: account.address, connector: 'Injected.'})
@@ -597,7 +597,7 @@ grid(async () => {//wallet prove: a refused flow never mints a nonce, so the wal
 	ok(prove.outcome == 'WalletFull.')
 	ok(!prove.nonce)//nothing to sign against, so the page can't open a signature request
 
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: wallet3.toLowerCase()})//mentions write the triad now, f0 in the matching lowercase form
+	let rows = await credentialRows({user_tag: userTag, type_text: 'Ethereum.', f0_text: wallet3.toLowerCase()})//mentions write the triad now, f0 in the matching lowercase form
 	ok(rows.length == 1 && rows[0].event_text == 'Mentioned.')//the mention is on the record, and no challenge row, because we never challenged
 	ok(rows[0].f1_text == wallet3 && rows[0].f2_text == wallet3)//and the mention carries the whole triad: the backfill's blank-f1 guard trusts that every row the new code writes is complete
 
@@ -617,7 +617,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 
 	//challenge row written by the oauth endpoint on the signin action; audit trail
 	await credentialOauthChallenge({userTag, provider: 'Discord.'})
-	let challenged = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event_text: 'Challenged.', json: {provider: 'Discord.'}})
+	let challenged = await credentialRows({user_tag: userTag, type_text: 'Oauth.', event_text: 'Challenged.', json: {provider: 'Discord.'}})
 	ok(challenged.length == 1)
 	ok((await _ledger(userTag, 'Oauth.', 'Challenged.'))[0].provider_text == 'Discord.')//and its ledger row beside it, the provider in its own column
 
@@ -627,7 +627,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd123', handle: 'alice_d', name: 'Alice D.', email: aliceEmailObj, proof: {account: {a: 1}, profile: {p: 2}, user: {u: 3}}})
 	let got = (await credentialOauthGet({userTag})).find(o => o.provider == 'Discord.')
 	ok(got.identifier == 'd123' && got.handle == 'alice_d' && got.email == 'alice@example.com')
-	let discordRow = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', json: {provider: 'Discord.'}, event_text: 'Proven.'}))[0]
+	let discordRow = (await credentialRows({user_tag: userTag, type_text: 'Oauth.', json: {provider: 'Discord.'}, event_text: 'Proven.'}))[0]
 	ok(discordRow.f0_text == 'alice@example.com' && discordRow.f2_text == 'alice@example.com')//validated email filled into f0/1/2
 	ok(discordRow.json.proof.account.a == 1)//the note preserves the auth.js slice as real nested json
 	let ledger = await _ledger(userTag, 'Oauth.', 'Proven.')//the ledger row beside the credential row, from the same values
@@ -648,7 +648,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	//to switch accounts the user must Remove first, then Set succeeds and points at the new account
 	await credentialOauthRemove({userTag, provider: 'Discord.'})
 	ok((await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd789', handle: 'alice_new', email: aliceEmailObj})).ok)//wrote now that the slot is free
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', json: {provider: 'Discord.'}, event_text: 'Proven.'})
+	let rows = await credentialRows({user_tag: userTag, type_text: 'Oauth.', json: {provider: 'Discord.'}, event_text: 'Proven.'})
 	ok(rows.length == 1)//only one active Discord row
 	ok((await credentialOauthGet({userTag})).find(o => o.provider == 'Discord.').identifier == 'd789')//new account wins
 
@@ -664,7 +664,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	//Set with no email: f0/1/2 stay blank
 	let userTag2 = Tag()
 	await credentialOauthSet({userTag: userTag2, provider: 'Discord.', identifier: 'd2', handle: 'bob'})
-	let bobRow = (await queryGet('credential_table', {user_tag: userTag2, type_text: 'Oauth.', json: {provider: 'Discord.'}, event_text: 'Proven.'}))[0]
+	let bobRow = (await credentialRows({user_tag: userTag2, type_text: 'Oauth.', json: {provider: 'Discord.'}, event_text: 'Proven.'}))[0]
 	ok(bobRow.f0_text == '' && bobRow.f1_text == '' && bobRow.f2_text == '')//no email passed → f columns blank
 })
 grid(async () => {//oauth: cross-user providerId uniqueness — one provider identity, one cold3 account; released claim is reclaimable
@@ -753,31 +753,31 @@ grid(async () => {//per-type writes fill hash_text and the note per the k-to-not
 
 	let hash = random32(), cycles = 40
 	await credentialPasswordSet({userTag, hash, cycles})
-	let row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Password.'}))[0]
+	let row = (await credentialRows({user_tag: userTag, type_text: 'Password.'}))[0]
 	ok(row.hash_text == hash)//the hash in its one home
 	ok(row.json.cycles === 40)//cycles a real number in the note
 	ok((await credentialPasswordGet({userTag})).hash == hash)//and the read answers from the new cells
 
 	let secret = 'X7C25WC6CUCF77BO7BOCVUHAZ553UKYA'
 	await credentialTotpSet({userTag, secret})
-	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.'}))[0]
+	row = (await credentialRows({user_tag: userTag, type_text: 'Totp.'}))[0]
 	ok(row.json.secret == secret && row.hash_text == '')//a secret is a key, not a hash, so it rides in the note
 	ok((await credentialTotpGet({userTag})).secret == secret)
 
 	let browserHash = random32()
 	await credentialBrowserSet({userTag, browserHash})
-	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Browser.'}))[0]
+	row = (await credentialRows({user_tag: userTag, type_text: 'Browser.'}))[0]
 	ok(row.hash_text == browserHash)
 	ok(makeText(row.json) == '{}')//browser rows carry no note
 	ok((await credentialBrowserGet({browserHash})).userTag == userTag)//the hottest lookup answers from hash_text
 
 	await credentialOauthChallenge({userTag, provider: 'Discord.'})
-	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event_text: 'Challenged.'}))[0]
+	row = (await credentialRows({user_tag: userTag, type_text: 'Oauth.', event_text: 'Challenged.'}))[0]
 	ok(row.json.provider == 'Discord.')//a challenge row's note carries only the provider
 
 	let v = validateEmailOrPhone('alice@example.com')
 	await credentialOtpChallenged({userTag, type: v.type, v, provider: 'Amazon.'})//the email and phone challenged row, the map's other {provider} note
-	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Email.', event_text: 'Challenged.'}))[0]
+	row = (await credentialRows({user_tag: userTag, type_text: 'Email.', event_text: 'Challenged.'}))[0]
 	ok(row.json.provider == 'Amazon.')
 	ok(row.event_text == 'Challenged.')//the word column, which every read now takes
 })
@@ -786,7 +786,7 @@ grid(async () => {//oauth notes: the named account rides the note, and null from
 	await clear('credential_table')
 	let userTag = Tag()
 	await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd1', handle: 'alex_dev_42', name: null, proof: {account: {providerAccountId: 'd1'}, profile: {global_name: null}, user: {}}})//discord with no display name set hands over null
-	let row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event_text: 'Proven.'}))[0]
+	let row = (await credentialRows({user_tag: userTag, type_text: 'Oauth.', event_text: 'Proven.'}))[0]
 	ok(row.json.provider == 'Discord.' && row.json.identifier == 'd1' && row.json.handle == 'alex_dev_42')
 	ok(row.event_text == 'Proven.')//as above
 	ok(!('name' in row.json))//null became absence, the blank of a property
@@ -806,7 +806,7 @@ grid(async () => {//wallet: writes store the triad, and the lookups normalize an
 	ok(!(await validateWallet('0xnothexatall')).ok)//text that isn't an address doesn't validate
 
 	ok((await credentialWalletSet({userTag: alice, address: checksummed})).ok)
-	let row = (await queryGet('credential_table', {user_tag: alice, type_text: 'Ethereum.', event_text: 'Proven.'}))[0]
+	let row = (await credentialRows({user_tag: alice, type_text: 'Ethereum.', event_text: 'Proven.'}))[0]
 	ok(row.f0_text == lower && row.f1_text == checksummed && row.f2_text == checksummed)//the stored triad
 	ok((await credentialWalletGet({userTag: alice}))[0] == checksummed)//callers see the checksummed face from f2
 	ok((await credentialWalletRefusal({userTag: alice, address: lower})) == 'WalletAlreadyProven.')//her own address in the other spelling is still her own address
@@ -1250,7 +1250,7 @@ grid(async () => {//ledger: an audit record lands durable in our own database, m
 	ok((await queryGet('ledger_table', {action_text: 'BatchExample.'})).length == 2)
 })
 
-grid(async () => {//ledger: the three words say subject, verb, and third party, each filterable on its own, and the planner reaches the two optional ones through ledger5 and ledger6
+grid(async () => {//ledger: the three words say subject, verb, and third party, each filterable on its own, and the planner reaches the two optional ones through ledger14 and ledger15
 	let {clear, pglite} = await getDatabase()
 	await clear('ledger_table')
 	let browserHash = await hashText('a browser')
@@ -1267,9 +1267,9 @@ grid(async () => {//ledger: the three words say subject, verb, and third party, 
 	ok((await queryGet('ledger_table', {action_text: 'Email.', event_text: 'Proven.'}))[0].provider_text == '')//a proof involves no third party, so the column stays blank
 
 	await pglite.query('SET enable_seqscan = off')//a handful of rows would always seq scan, so forcing index consideration is what proves each partial predicate is provable from its filter
-	let plan = async (title, cell) => (await pglite.query(`EXPLAIN SELECT * FROM ledger_table WHERE hide = 0 AND ${title} = '${cell}' ORDER BY row_tick DESC`)).rows.map(r => Object.values(r)[0]).join('\n')
-	ok((await plan('event_text', 'Challenged.')).includes('ledger5'))
-	ok((await plan('provider_text', 'Twilio.')).includes('ledger6'))
+	let plan = async (title, cell) => (await pglite.query(`EXPLAIN SELECT * FROM ledger_table WHERE ${title} = '${cell}' ORDER BY row_tick DESC`)).rows.map(r => Object.values(r)[0]).join('\n')
+	ok((await plan('event_text', 'Challenged.')).includes('ledger14'))
+	ok((await plan('provider_text', 'Twilio.')).includes('ledger15'))
 	await pglite.query('SET enable_seqscan = on')
 
 	let tossed
@@ -1292,7 +1292,7 @@ grid(async () => {//ledger: a plain-object value spelled json filters properties
 	ok(rows.length == 1 && rows[0].json.count == 1)//level2 spells the path from the column's own word
 })
 
-grid(async () => {//ledger: the hash margin gathers every record about one thing, whatever the action was, and the planner reaches them through ledger4
+grid(async () => {//ledger: the hash margin gathers every record about one thing, whatever the action was, and the planner reaches them through ledger13
 	let {clear, pglite} = await getDatabase()
 	await clear('ledger_table')
 	let browserHash = await hashText('a browser')
@@ -1311,15 +1311,15 @@ grid(async () => {//ledger: the hash margin gathers every record about one thing
 	ok((await queryGet('ledger_table', {hash_text: other})).length == 1)
 
 	await pglite.query('SET enable_seqscan = off')//a handful of rows would always seq scan, so forcing index consideration is what proves the partial predicate is provable from the filter
-	let plan = (await pglite.query(`EXPLAIN SELECT * FROM ledger_table WHERE hide = 0 AND hash_text = '${subject}' ORDER BY row_tick DESC`)).rows.map(r => Object.values(r)[0]).join('\n')
+	let plan = (await pglite.query(`EXPLAIN SELECT * FROM ledger_table WHERE hash_text = '${subject}' ORDER BY row_tick DESC`)).rows.map(r => Object.values(r)[0]).join('\n')
 	await pglite.query('SET enable_seqscan = on')
-	ok(plan.includes('ledger4'))//postgres proves hash_text = a nonblank constant implies hash_text != '', so the partial index serves the lookup
+	ok(plan.includes('ledger13'))//postgres proves hash_text = a nonblank constant implies hash_text != '', so the partial index serves the lookup
 
 	let tossed = false; try { await ledgerAdd({action: 'ExampleSent.', browserHash, hash: 'not a hash'}) } catch (e) { tossed = true }
 	ok(tossed)//the cell holds a hash or the blank, nothing else
 })
 
-grid(async () => {//ledger: the tag margin holds a row's own singular tag, the way the hash margin holds its own singular hash, and the planner reaches them through ledger8
+grid(async () => {//ledger: the tag margin holds a row's own singular tag, the way the hash margin holds its own singular hash, and the planner reaches them through ledger16
 	let {clear, pglite} = await getDatabase()
 	await clear('ledger_table')
 	let browserHash = await hashText('a browser')
@@ -1338,15 +1338,15 @@ grid(async () => {//ledger: the tag margin holds a row's own singular tag, the w
 	ok((await queryGet('ledger_table', {action_text: 'Email.'})).every(r => r.door_tag == gridDoor.tag))//and all four name the request that wrote them, whether they carry a tag of their own or not
 
 	await pglite.query('SET enable_seqscan = off')//a handful of rows would always seq scan, so forcing index consideration is what proves the partial predicate is provable from the filter
-	let plan = (await pglite.query(`EXPLAIN SELECT * FROM ledger_table WHERE hide = 0 AND tag_text = '${challenge}' ORDER BY row_tick DESC`)).rows.map(r => Object.values(r)[0]).join('\n')
+	let plan = (await pglite.query(`EXPLAIN SELECT * FROM ledger_table WHERE tag_text = '${challenge}' ORDER BY row_tick DESC`)).rows.map(r => Object.values(r)[0]).join('\n')
 	await pglite.query('SET enable_seqscan = on')
-	ok(plan.includes('ledger8'))//postgres proves tag_text = a nonblank constant implies tag_text != '', so the partial index serves the lookup
+	ok(plan.includes('ledger16'))//postgres proves tag_text = a nonblank constant implies tag_text != '', so the partial index serves the lookup
 
 	let tossed = false; try { await ledgerAdd({action: 'Email.', browserHash, tag: 'not a tag'}) } catch (e) { tossed = true }
 	ok(tossed)//the cell holds a tag or the blank, nothing else
 })
 
-grid(async () => {//ledger: door_tag reaches every row a request writes, so two trips through one function stay separable long afterward, and the planner reaches them through ledger9
+grid(async () => {//ledger: door_tag reaches every row a request writes, so two trips through one function stay separable long afterward, and the planner reaches them through ledger17
 	let {clear, pglite} = await getDatabase()
 	await clear('credential_table'); await clear('ledger_table')
 	let userTag = Tag()
@@ -1365,9 +1365,9 @@ grid(async () => {//ledger: door_tag reaches every row a request writes, so two 
 	ok((await queryGet('ledger_table', {door_tag: second.tag})).every(r => r.json.address.f0 == v2.f0))//and the second's, under its own
 
 	await pglite.query('SET enable_seqscan = off')
-	let plan = (await pglite.query(`EXPLAIN SELECT * FROM ledger_table WHERE hide = 0 AND door_tag = '${first.tag}' ORDER BY row_tick DESC`)).rows.map(r => Object.values(r)[0]).join('\n')
+	let plan = (await pglite.query(`EXPLAIN SELECT * FROM ledger_table WHERE door_tag = '${first.tag}' ORDER BY row_tick DESC`)).rows.map(r => Object.values(r)[0]).join('\n')
 	await pglite.query('SET enable_seqscan = on')
-	ok(plan.includes('ledger9'))//nothing partial to prove here, since every row has a door tag; the index simply serves the lookup
+	ok(plan.includes('ledger17'))//nothing partial to prove here, since every row has a door tag; the index simply serves the lookup
 
 	let tossed = false; try { await doorAsyncLocalStorageRun({...gridDoor, tag: ''}, () => ledgerAdd({action: 'Email.'})) } catch (e) { tossed = true }
 	ok(tossed)//a door without a tag can't write a row; the cell is never blank and never the caller's to choose
@@ -1567,7 +1567,7 @@ grid(async () => {//json: the check at the write path refuses what stringificati
 	ok(tossed)//pre-stringified text isn't an object
 	ok((await queryGet('example_table', {name_text: 'carol'})).length == 0)//nothing got through; the value-level refusals have unit tests beside isPlain in core
 })
-grid(async () => {//json: path filters--a plain-object value in the cells reads properties inside the json column, for queryGet and queryHide both
+grid(async () => {//json: path filters--a plain-object value in the cells reads properties inside the json column, for queryGet and queryDelete both
 	let {clear} = await getDatabase()
 	await clear('example_table')
 
@@ -1593,8 +1593,8 @@ grid(async () => {//json: path filters--a plain-object value in the cells reads 
 	let tossed = false; try { await queryGet('example_table', {some_json: {city: ''}}) } catch (e) { tossed = true }
 	ok(tossed)//a blank path value is refused: absent is the blank, so nothing blank is ever filtered for
 
-	await queryHide('example_table', {some_json: {city: 'Tokyo'}})//the UPDATE filters the same way, the shape of the oauth remove
-	ok((await queryGet('example_table', {some_json: {city: 'Tokyo'}})).length == 0)//hidden now
+	await queryDelete('example_table', {some_json: {city: 'Tokyo'}})//the DELETE filters the same way, the shape a remove takes
+	ok((await queryGet('example_table', {some_json: {city: 'Tokyo'}})).length == 0)//gone now
 	ok((await queryGet('example_table', {some_json: {city: 'Osaka'}})).length == 1)//the neighbor rides on
 })
 grid(async () => {//queryUpdate: edit cells in place, where filtering the way queryGet's cells do and set naming the new values, and get back the rows as they stand after
@@ -1617,10 +1617,6 @@ grid(async () => {//queryUpdate: edit cells in place, where filtering the way qu
 	rows = await queryUpdate('example_table', {where: {name_text: 'nobody'}, set: {hits: 99}})
 	ok(rows.length == 0)//nothing matched, and an empty array says so
 
-	await queryHide('example_table', {name_text: 'alice'})
-	rows = await queryUpdate('example_table', {where: {name_text: 'alice'}, set: {hits: 11}})
-	ok(rows.length == 0)//a hidden row is out of reach, the same as for every other helper today
-
 	let tossed
 	tossed = false; try { await queryUpdate('example_table', {where: {}, set: {hits: 1}}) } catch (e) { tossed = true }
 	ok(tossed)//no filter would edit every row
@@ -1631,7 +1627,7 @@ grid(async () => {//queryUpdate: edit cells in place, where filtering the way qu
 	tossed = false; try { await queryUpdate('example_table', {where: {name_text: 'alice'}, set: {row_tick: 5}}) } catch (e) { tossed = true }
 	ok(tossed)//a margin is never edited: row_tick means when the row was added
 })
-grid(async () => {//queryDelete: remove rows by the same filters, hidden or not, and refuse to run with no filter at all
+grid(async () => {//queryDelete: remove rows by the same filters, and refuse to run with no filter at all
 	let {clear} = await getDatabase()
 	await clear('example_table')
 	let hash1 = random32(), hash2 = random32()
@@ -1649,9 +1645,8 @@ grid(async () => {//queryDelete: remove rows by the same filters, hidden or not,
 	ok((await queryGet('example_table', {name_text: 'bob'})).length == 0)
 	ok(await queryCountAllRows({table: 'example_table'}) == 1)//only alice with hash2 stands
 
-	await queryHide('example_table', {name_text: 'alice'})//hide the last row, then delete it: hidden rows go too
-	await queryDelete('example_table', {name_text: 'alice'})
-	ok(await queryCountAllRows({table: 'example_table'}) == 0)//absence is the answer, so hide is no filter for a delete
+	await queryDelete('example_table', {name_text: 'alice'})//the last row
+	ok(await queryCountAllRows({table: 'example_table'}) == 0)
 
 	let tossed = false; try { await queryDelete('example_table', {}) } catch (e) { tossed = true }
 	ok(tossed)//no filter would empty the table
@@ -1669,10 +1664,10 @@ grid(async () => {
 		{name_text: 'alice', hits: 20, some_hash: hash2, some_json: {}},//matches only name
 		{name_text: 'bob', hits: 30, some_hash: hash1, some_json: {}},//matches only hash
 	]})
-	await queryHide('example_table', {name_text: 'alice', some_hash: hash1})
+	await queryDelete('example_table', {name_text: 'alice', some_hash: hash1})//both cells must match
 
 	let aliceRows = await queryGet('example_table', {name_text: 'alice'})
-	ok(aliceRows.length == 1)//only alice+hash2 visible
+	ok(aliceRows.length == 1)//only alice+hash2 remains
 	ok(aliceRows[0].some_hash == hash2)
 
 	let bobRows = await queryGet('example_table', {name_text: 'bob'})
@@ -1771,10 +1766,10 @@ grid(async () => {//exercise query helper functions with example_table
 	let all = await queryGet('example_table', {name_text: 'alice'})//queryGet returns all matches
 	ok(all.length == 2)
 
-	await queryHide('example_table', {name_text: 'alice'})//hide rows from visible queries
-	ok(await queryCountRows({table: 'example_table', titleFind: 'name_text', cellFind: 'alice'}) == 2)//still counted
-	let visible = await queryGet('example_table', {name_text: 'alice'})
-	ok(visible.length == 0)//but not visible
+	await queryDelete('example_table', {name_text: 'alice'})//both alice rows go
+	ok(await queryCountRows({table: 'example_table', titleFind: 'name_text', cellFind: 'alice'}) == 0)
+	ok((await queryGet('example_table', {name_text: 'alice'})).length == 0)
+	ok(await queryCountRows({table: 'example_table', titleFind: 'name_text', cellFind: 'bob'}) == 1)//bob is untouched
 })
 
 //for ephemeral, local, Node grid tests, simulate Supabase's chainable select().eq().order() API backed by PGlite

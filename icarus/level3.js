@@ -271,7 +271,7 @@ export async function credentialOtpEnter({tag, guess, userTag}) {
 	checkTag(userTag); checkTag(tag)//as at send, the endpoint resolved the signed-in user before calling us; the tag is the page's handle on the enter box she typed into, learned from the snapshot
 
 	//find the challenge: this user's visible challenged row carrying this tag; starting from the user is what keeps a housemate's guess at her box from finding anything
-	let challenge = (await queryGet('credential_table', {user_tag: userTag, event_text: 'Challenged.', json: {tag}}))[0]
+	let challenge = (await credentialRows({user_tag: userTag, event_text: 'Challenged.', json: {tag}}))[0]
 	if (!challenge || Now() >= challenge.row_tick + otpConstants.expiration) return {success: false, outcome: 'Expired.'}//no live challenge: never hers, past its twenty minutes, replaced by a resend, or already closed; every way, lead the user to request a new code
 	let v = {ok: true, f0: challenge.f0_text, f1: challenge.f1_text, f2: challenge.f2_text, type: challenge.type_text}//the address, in the shape validateEmailOrPhone gave send
 	let forms = {f0: v.f0, f1: v.f1, f2: v.f2}//the address in its three forms, on every ledger row enter writes
@@ -385,7 +385,7 @@ and you now realize: []browsers a user is signed in to!
 
 export async function credentialPasswordGet({userTag}) {
 	checkTag(userTag)
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Password.', event_text: 'Proven.'})
+	let rows = await credentialRows({user_tag: userTag, type_text: 'Password.', event_text: 'Proven.'})
 	let row = rows[0]
 	if (row) return {hash: row.hash_text, cycles: row.json.cycles}
 	return false//no current password
@@ -424,7 +424,7 @@ export async function credentialPasswordVerify({raw, hash}) {
 //totp: a user can have a single proven enrollment or nothing, and one enrollment in flight; each is a row in credential_table, with the shared secret key that generates codes in json
 async function _totpRead({userTag}) {//one query for everything totp knows about a user: her secret if enrolled, and the one she's enrolling with if mid-flow, each blank otherwise; the one place a start is read, so the clock below holds everywhere
 	checkTag(userTag)
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.'})//every visible Totp. row, newest first
+	let rows = await credentialRows({user_tag: userTag, type_text: 'Totp.'})//every visible Totp. row, newest first
 	let proven = rows.find(r => r.event_text == 'Proven.')
 	let enrolling = rows.find(r => r.event_text == 'Challenged.')//the newest start; enroll1 hides earlier ones, so at most one is visible
 	let live = enrolling && Now() < enrolling.row_tick + Limit.expirationUser//a start lives twenty minutes; a stale one reads as none, which is graceful for a slow user, not an attacker
@@ -585,14 +585,14 @@ export async function validateWallet(raw) {
 
 export async function credentialWalletGet({userTag}) {//list the addresses this user has proven, newest first, as checksummed faces
 	checkTag(userTag)
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event_text: 'Proven.'})
+	let rows = await credentialRows({user_tag: userTag, type_text: 'Ethereum.', event_text: 'Proven.'})
 	return rows.map(row => row.f2_text)//[address, ...] checksummed, zero to the limit of them
 }
 
 export async function credentialWalletHolder({f0}) {//which user, if any, has proven they control this address? any spelling accepted
 	checkText(f0)
 	let v = await validateWallet(f0); if (!v.ok) toss('use', {f0})//callers hold addresses a wallet or our own table handed them, so anything else is a broken caller
-	let rows = await queryGet('credential_table', {type_text: 'Ethereum.', f0_text: v.f0, event_text: 'Proven.'})//the matching form
+	let rows = await credentialRows({type_text: 'Ethereum.', f0_text: v.f0, event_text: 'Proven.'})//the matching form
 	let row = rows[0]
 	if (row) return {userTag: row.user_tag}
 	return false//nobody has proven it; mentions and challenges reserve an address for no one
@@ -696,7 +696,7 @@ export async function credentialWalletProve2({userTag, address, message, signatu
 	//find the challenge this message answers, by the nonce inside it
 	let parsed = viem_siwe.parseSiweMessage(message)//never throws: garbage parses to an empty object, and an edited message to whatever was typed into it
 	if (!hasTag(parsed.nonce)) return await refuse('BadSignature.')//the boundary check on text the page sent, so a broken message gets this answer rather than a toss from the query helper below; the lookup is what proves the nonce is ours
-	let challenges = await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: v.f0, event_text: 'Challenged.', json: {nonce: parsed.nonce}})//this user's challenge for this address under this nonce; by the nonce rather than newest, so two tabs proving one address each find their own
+	let challenges = await credentialRows({user_tag: userTag, type_text: 'Ethereum.', f0_text: v.f0, event_text: 'Challenged.', json: {nonce: parsed.nonce}})//this user's challenge for this address under this nonce; by the nonce rather than newest, so two tabs proving one address each find their own
 	let challenge = challenges[0]
 	if (!challenge || Now() >= challenge.row_tick + Limit.expirationUser) return await refuse('Expired.')//no live challenge: a nonce we never issued, or issued to someone else, or past its twenty minutes, or already spent; every way, start over
 	let nonce = challenge.json.nonce//the row's, never the parsed one: validateSiweMessage skips its nonce check when handed undefined
@@ -805,12 +805,12 @@ export async function credentialOauthSet({userTag, provider, proof, identifier, 
 	let refuse = async (outcome) => { await ledgerAdd({action: 'Oauth.', event: 'Refused.', provider, userTag, json: {...json, outcome}}); return {ok: false, outcome} }//a refusal touches no table, writes its ledger row, and answers the caller
 
 	//check 1: this user already has SOME account linked for this provider
-	let mine = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', json: {provider}, event_text: 'Proven.'})
+	let mine = await credentialRows({user_tag: userTag, type_text: 'Oauth.', json: {provider}, event_text: 'Proven.'})
 	if (mine.length) return await refuse('OauthAlreadyLinked.')//already linked; caller must prompt user to Remove first to switch accounts
 
 	//check 2: any OTHER user has THIS specific providerId linked — one provider identity, one cold3 account; queryGet filters hidden rows, so a removed claim is releasable to a new holder
 	//trust the provider: the identifier is unique per user on their side, and is in the normalized form they hand to us — we store it verbatim; credential15 indexes the identifier path this filter rides
-	let claimed = await queryGet('credential_table', {type_text: 'Oauth.', json: {provider, identifier}, event_text: 'Proven.'})
+	let claimed = await credentialRows({type_text: 'Oauth.', json: {provider, identifier}, event_text: 'Proven.'})
 	if (claimed.some(r => r.user_tag != userTag)) return await refuse('OauthClaimedElsewhere.')
 
 	/*
@@ -841,7 +841,7 @@ export async function credentialOauthRemove({userTag, provider}) {
 }
 export async function credentialOauthGet({userTag}) {//list this user's linked oauth credentials across providers we currently support
 	checkTag(userTag)
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event_text: 'Proven.'})
+	let rows = await credentialRows({user_tag: userTag, type_text: 'Oauth.', event_text: 'Proven.'})
 	let providerSet = new Set(oauthProviders().map(p => p.tag))
 	return rows
 		.filter(r => providerSet.has(r.json.provider))
@@ -865,7 +865,7 @@ v throughout is the result of validateEmailOrPhone, carrying the three forms and
 
 export async function credentialOtpHolder({type, f0}) {//which user, if any, has proven they control this address?
 	checkText(type); checkText(f0)
-	let rows = await queryGet('credential_table', {type_text: type, f0_text: f0, event_text: 'Proven.'})
+	let rows = await credentialRows({type_text: type, f0_text: f0, event_text: 'Proven.'})
 	let row = rows[0]
 	if (row) return {userTag: row.user_tag}
 	return false//nobody has proven it; mentions and challenges don't reserve an address for anyone
@@ -887,7 +887,7 @@ export async function credentialOtpProven({userTag, type, v, tag = ''}) {//the u
 	checkTag(userTag); checkTagOrBlank(tag)
 	let holder = await credentialOtpHolder({type, f0: v.f0})
 	if (holder && holder.userTag != userTag) return false//another user proved it first, maybe while this challenge was live; decline the claim so an address never has two holders
-	let challenges = await queryGet('credential_table', {user_tag: userTag, type_text: type, f0_text: v.f0, event_text: 'Challenged.'})
+	let challenges = await credentialRows({user_tag: userTag, type_text: type, f0_text: v.f0, event_text: 'Challenged.'})
 	if (!challenges.length) return false//no visible start of this flow; the user removed the address mid-challenge, and a late correct code shouldn't resurrect it
 	await credentialSet({userTag, type, event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2, json: tag ? {tag} : {}})
 	await ledgerAdd({action: type, event: 'Proven.', userTag, tag, json: {address: {f0: v.f0, f1: v.f1, f2: v.f2}}})//the challenge that proved it in the tag margin, so the proof and the send it answers gather together
@@ -896,7 +896,7 @@ export async function credentialOtpProven({userTag, type, v, tag = ''}) {//the u
 
 export async function credentialOtpGet({userTag, type}) {//a user's addresses of one type, and her live challenges among them, from one read: {addresses, challenges}. Each address is the newest row of its highest event--that one row is both the status and the face--and each challenge is the newest visible challenged row of an address, while it carries a tag and is under twenty minutes old
 	checkTag(userTag)
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: type})//every visible event row, newest first
+	let rows = await credentialRows({user_tag: userTag, type_text: type})//every visible event row, newest first
 	let m = new Map()//group by normalized address
 	let challenges = []
 	for (let row of rows) {
@@ -929,7 +929,7 @@ export async function credentialOtpRemove({userTag, type, f0}) {//hide every eve
 //browser: user is signed in at this browser; browserHash is the row's hash, and the note stays empty
 export async function credentialBrowserGet({browserHash}) {//what user, if any, is signed in at this browser?
 	checkHash(browserHash)
-	let rows = await queryGet('credential_table', {type_text: 'Browser.', hash_text: browserHash, event_text: 'Proven.'})//the hottest query in the application, riding credential13
+	let rows = await credentialRows({type_text: 'Browser.', hash_text: browserHash, event_text: 'Proven.'})//the hottest query in the application, riding credential13
 	let row = rows[0]
 	if (row) return {userTag: row.user_tag}
 	return false//no one signed in at this browser
@@ -961,14 +961,14 @@ export async function credentialNameGet({//returns false not found, or {userTag,
 }) {
 	let row, rows
 	if (given(userTag)) { checkTag(userTag)
-		rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Name.', event_text: 'Proven.'})
+		rows = await credentialRows({user_tag: userTag, type_text: 'Name.', event_text: 'Proven.'})
 	} else if (given(f0)) { checkText(f0)
-		rows = await queryGet('credential_table', {type_text: 'Name.', f0_text: f0, event_text: 'Proven.'})
+		rows = await credentialRows({type_text: 'Name.', f0_text: f0, event_text: 'Proven.'})
 	} else if (given(f2)) { checkText(f2)
-		rows = await queryGet('credential_table', {type_text: 'Name.', f2_text: f2, event_text: 'Proven.'})
+		rows = await credentialRows({type_text: 'Name.', f2_text: f2, event_text: 'Proven.'})
 	} else if (given(part1)) {
 		let v = validateName(part1); if (!v.ok) return false
-		rows = await queryGet('credential_table', {type_text: 'Name.', f0_text: v.f0, event_text: 'Proven.'})
+		rows = await credentialRows({type_text: 'Name.', f0_text: v.f0, event_text: 'Proven.'})
 	} else { toss('use', {userTag, f0, f2, part1}) }
 
 	row = rows[0]
@@ -1029,7 +1029,7 @@ SQL(`
 CREATE TABLE credential_table (
 	row_tag    CHAR(21)  NOT NULL PRIMARY KEY,
 	row_tick   BIGINT    NOT NULL,
-	hide       BIGINT    NOT NULL,
+	hide       BIGINT    NOT NULL,  -- 0 visible, nonzero hidden; the one table that still has the column: credentialRows reads around it, credentialSet inserts it 0, and queryHide sets it
 
 	user_tag   CHAR(21)  NOT NULL,  -- the user who mentioned a credential, like an address, was challenged to prove it, proved it, or removed it
 	type_text  TEXT      NOT NULL,  -- credential type, like "Phone.", "Twitter.", "Ethereum.", "Totp.", "Password." or others
@@ -1068,11 +1068,16 @@ test(() => {
 	ok(!hasEvent('Validated.') && !hasEvent('proven.') && !hasEvent('') && !hasEvent(4))
 })
 
+//every visible credential_table row matching cells, newest first: the read every credential function starts from
+//credential_table alone still has a hide column; readers leave hidden rows out here and nowhere else, and the grid tests read through it too
+export async function credentialRows(cells) { return await queryGet('credential_table', {hide: 0, ...cells}) }
+
 export async function credentialSet({userTag, type, event, f0 = '', f1 = '', f2 = '', hash = '', json = {}}) {
 	checkTag(userTag); checkText(type); checkEvent(event)//these three are required, everything else is optional; event is a tag like 'Proven.'
 	checkTextOrBlank(f0); checkTextOrBlank(f1); checkTextOrBlank(f2)
 	checkHashOrBlank(hash)//the row's one meaningful hash, or blank; json is guarded below by level2's isPlain check on the cell
 	await queryAddRow({table: 'credential_table', row: {
+		hide: 0,//credential_table alone still has a hide column, with no default, so every row goes in visible
 		user_tag: userTag,
 		type_text: type,
 		event_text: event,
