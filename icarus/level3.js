@@ -1107,7 +1107,7 @@ SQL(`
 CREATE TABLE delay_table (
 	row_tag        CHAR(21)  NOT NULL PRIMARY KEY,
 	row_tick       BIGINT    NOT NULL,
-	hide           BIGINT    NOT NULL,
+	hide           BIGINT    NOT NULL DEFAULT 0,  -- never set here; the default is scaffolding for the column's drop, holding inserts whole until it lands
 
 	task_text      TEXT      NOT NULL,  -- the kind of task we did, like "Hello."
 	d1             BIGINT    NOT NULL,  -- several task defined slots for durations in milliseconds
@@ -1125,6 +1125,8 @@ CREATE TABLE delay_table (
 
 CREATE INDEX delay1 ON delay_table               (task_text, row_tick DESC) WHERE hide = 0;
 CREATE INDEX delay2 ON delay_table (wrapper_hash, task_text, row_tick DESC) WHERE hide = 0;
+CREATE INDEX delay3 ON delay_table               (task_text, row_tick DESC);  -- delay1 and delay2 without hide
+CREATE INDEX delay4 ON delay_table (wrapper_hash, task_text, row_tick DESC);
 
 ALTER TABLE delay_table ENABLE ROW LEVEL SECURITY;
 `)
@@ -1159,7 +1161,7 @@ SQL(`
 CREATE TABLE example_table (
 	row_tag    CHAR(21)  NOT NULL PRIMARY KEY,  -- unique tag identifies each row
 	row_tick   BIGINT    NOT NULL,              -- tick when row was added
-	hide       BIGINT    NOT NULL,              -- 0 visible, nonzero ignore this row
+	hide       BIGINT    NOT NULL DEFAULT 0,    -- 0 visible, nonzero ignore this row; the default is scaffolding for the column's drop, holding inserts whole until it lands
 
 	name_text  TEXT      NOT NULL,  -- example holding any text including blank
 	hits       BIGINT    NOT NULL,  -- examle holding any integer
@@ -1168,6 +1170,7 @@ CREATE TABLE example_table (
 );
 
 CREATE INDEX example1 ON example_table (hide, row_tick DESC);  -- index to get visible rows, sorted recent first, quickly
+CREATE INDEX example2 ON example_table (row_tick DESC);  -- example1 without hide: rows newest first, the sandbox's one index
 `)
 
 
@@ -1232,7 +1235,7 @@ SQL(`
 CREATE TABLE ledger_table (
 	row_tag        CHAR(21)  NOT NULL PRIMARY KEY,
 	row_tick       BIGINT    NOT NULL,
-	hide           BIGINT    NOT NULL,
+	hide           BIGINT    NOT NULL DEFAULT 0,  -- never set here; the default is scaffolding for the column's drop, holding inserts whole until it lands
 
 	-- where this happened, who was here, and which request it was; the essay above says who vouches for each cell
 	wrapper_hash   CHAR(52)  NOT NULL,  -- the build of our software that wrote the row
@@ -1264,6 +1267,15 @@ CREATE INDEX ledger6 ON ledger_table (provider_text, row_tick DESC) WHERE hide =
 CREATE UNIQUE INDEX ledger7 ON ledger_table (hash_text) WHERE action_text = 'Hit.';  -- one Hit. per browser per hour: partial, because rows of other actions share a hash on purpose, and recordHit's plain insert lets it raise 23505 to say the visit is already recorded
 CREATE INDEX ledger8 ON ledger_table (tag_text,      row_tick DESC) WHERE hide = 0 AND tag_text != '';  -- every record about one tagged thing, newest first
 CREATE INDEX ledger9 ON ledger_table (door_tag,      row_tick DESC) WHERE hide = 0;  -- every row one request wrote, newest first; no partial predicate, because no row lacks a door tag
+
+CREATE INDEX ledger10 ON ledger_table (browser_hash,  row_tick DESC);  -- ledger1 through ledger6, ledger8, and ledger9 without hide, in that order and to the same purposes
+CREATE INDEX ledger11 ON ledger_table (user_tag_text, row_tick DESC);
+CREATE INDEX ledger12 ON ledger_table (action_text,   row_tick DESC);
+CREATE INDEX ledger13 ON ledger_table (hash_text,     row_tick DESC) WHERE hash_text != '';
+CREATE INDEX ledger14 ON ledger_table (event_text,    row_tick DESC) WHERE event_text != '';
+CREATE INDEX ledger15 ON ledger_table (provider_text, row_tick DESC) WHERE provider_text != '';
+CREATE INDEX ledger16 ON ledger_table (tag_text,      row_tick DESC) WHERE tag_text != '';
+CREATE INDEX ledger17 ON ledger_table (door_tag,      row_tick DESC);
 
 ALTER TABLE ledger_table ENABLE ROW LEVEL SECURITY;
 `)
@@ -1374,7 +1386,7 @@ SQL(`
 CREATE TABLE profile_table (
 	row_tag       CHAR(21)  NOT NULL PRIMARY KEY,
 	row_tick      BIGINT    NOT NULL,
-	hide          BIGINT    NOT NULL,
+	hide          BIGINT    NOT NULL DEFAULT 0,  -- the default is scaffolding for the column's drop, holding inserts whole until it lands
 
 	user_tag      CHAR(21)  NOT NULL,
 	profile_text  TEXT      NOT NULL   -- printed object so you can add properties without changing schema; you never need to index by one
@@ -1404,13 +1416,14 @@ SQL(`
 CREATE TABLE settings_table (
 	row_tag             CHAR(21)  NOT NULL PRIMARY KEY,
 	row_tick            BIGINT    NOT NULL,
-	hide                BIGINT    NOT NULL,  -- standard starting three present for consistancy, but not used
+	hide                BIGINT    NOT NULL DEFAULT 0,  -- not used; the default is scaffolding for the column's drop, holding inserts whole until it lands
 
 	setting_name_text   TEXT      NOT NULL,  -- the name of the setting kept by this row
 	setting_value_text  TEXT      NOT NULL   -- the value of that named setting, you have to store a number as text
 );
 
 CREATE UNIQUE INDEX settings1 ON settings_table (setting_name_text) WHERE hide = 0;  -- among visible rows, setting names must be unique
+CREATE UNIQUE INDEX settings2 ON settings_table (setting_name_text);  -- settings1 without hide: setting names are unique
 
 ALTER TABLE settings_table ENABLE ROW LEVEL SECURITY;
 `)
@@ -1485,7 +1498,7 @@ SQL(`
 CREATE TABLE trail_table (
 	row_tag     CHAR(21)  NOT NULL PRIMARY KEY,
 	row_tick    BIGINT    NOT NULL,
-	hide        BIGINT    NOT NULL,  -- not used
+	hide        BIGINT    NOT NULL DEFAULT 0,  -- not used; the default is scaffolding for the column's drop, holding inserts whole until it lands
 
 	hash        CHAR(52)  NOT NULL,  -- the hash of the message about the event that happened on row tick
 	expiration  BIGINT    NOT NULL,  -- the caller indicating when this row could be removed from the database; 0 for never; no system presently clears expired rows
@@ -1494,6 +1507,7 @@ CREATE TABLE trail_table (
 
 CREATE INDEX trail1 ON trail_table (hide,       row_tick DESC);  -- hide or delete old rows quickly
 CREATE INDEX trail2 ON trail_table (hide, hash, row_tick DESC);  -- get time sorted rows by hash
+CREATE INDEX trail3 ON trail_table (hash, row_tick DESC);  -- trail2 without hide: every row about one message, newest first; trail1 gets no successor, since nothing reads by tick alone
 
 ALTER TABLE trail_table ENABLE ROW LEVEL SECURITY;
 `)
@@ -1510,7 +1524,7 @@ SQL(`
 CREATE TABLE user_table (
 	row_tag       CHAR(21)  NOT NULL PRIMARY KEY,
 	row_tick      BIGINT    NOT NULL,
-	hide          BIGINT    NOT NULL,
+	hide          BIGINT    NOT NULL DEFAULT 0,  -- the default is scaffolding for the column's drop, holding inserts whole until it lands
 
 	user_tag      CHAR(21)  NOT NULL,
 	stage         BIGINT    NOT NULL   -- 0 not used, 1 provisional, 2 normal, 

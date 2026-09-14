@@ -1,5 +1,5 @@
 summary:
-  generated: 2026sep13.2230.34070
+  generated: 2026sep14.1750.54090
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -194,8 +194,8 @@ modules:
     description: Authentication for the Web.
     from: site
     versions:
-      declared: ^0.41.2 on 2026apr14 4m old
-      installed: 0.41.2 on 2026apr14 4m old 🐣 Pre-1.0 version installed
+      declared: ^0.41.2 on 2026apr14 5m old
+      installed: 0.41.2 on 2026apr14 5m old 🐣 Pre-1.0 version installed
       current: 0.41.3 on 2026jul20 1m old
       latest: 0.41.3 on 2026jul20 1m old
     downloads:
@@ -351,7 +351,7 @@ modules:
     from: icarus
     versions:
       declared: ^2.95.3 on 2026feb06 7m old
-      installed: 2.108.2 on 2026jun15 2m old
+      installed: 2.108.2 on 2026jun15 3m old
       current: 2.116.0 on 2026sep07 0m old
       latest: 2.116.0 on 2026sep07 0m old
     downloads:
@@ -463,7 +463,7 @@ modules:
       declared: ^5.2.4 on 2025may09 16m old
       installed: 5.2.4 on 2025may09 16m old 🕰️ Installed version 1+ year old
       current: 5.2.4 on 2025may09 16m old
-      latest: 6.0.8 on 2026jul14 2m old 🎁 Major new version available
+      latest: 6.0.9 on 2026sep14 0m old 🎁 Major new version available
     downloads:
       weekly: 7,126,186
       on: 2026aug18.1523.45867
@@ -520,8 +520,8 @@ modules:
     versions:
       declared: ^2.23.8 on 2026mar10 6m old
       installed: 2.23.10 on 2026jun24 2m old
-      current: 2.24.0 on 2026aug28 0m old
-      latest: 2.24.0 on 2026aug28 0m old
+      current: 2.25.0 on 2026sep14 0m old
+      latest: 2.25.0 on 2026sep14 0m old
     downloads:
       weekly: 1,077,164
       on: 2026aug18.1524.24524
@@ -689,8 +689,8 @@ modules:
     versions:
       declared: ^6.7.0 on 2026jun24 2m old
       installed: 6.7.0 on 2026jun24 2m old
-      current: 6.7.8 on 2026aug10 1m old
-      latest: 6.7.8 on 2026aug10 1m old
+      current: 6.8.0 on 2026sep14 0m old
+      latest: 6.8.0 on 2026sep14 0m old
     downloads:
       weekly: 124,309
       on: 2026aug18.1523.58589
@@ -983,8 +983,8 @@ modules:
     versions:
       declared: ^4.63.0 on 2026feb05 7m old
       installed: 4.105.0 on 2026jun25 2m old
-      current: 4.131.1 on 2026sep11 0m old
-      latest: 4.131.1 on 2026sep11 0m old
+      current: 4.131.2 on 2026sep14 0m old
+      latest: 4.131.2 on 2026sep14 0m old
     downloads:
       weekly: 15,295,217
       on: 2026jul21.1759.35951
@@ -1009,8 +1009,8 @@ modules:
     versions:
       declared: ^4.3.6 on 2026jan22 7m old
       installed: 4.4.3 on 2026may04 4m old
-      current: 4.6.4 on 2026sep13 0m old
-      latest: 4.6.4 on 2026sep13 0m old
+      current: 4.6.5 on 2026sep13 0m old
+      latest: 4.6.5 on 2026sep13 0m old
     downloads:
       weekly: 224,127,336
       on: 2026aug18.1523.45867
