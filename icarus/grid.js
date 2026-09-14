@@ -824,7 +824,7 @@ grid(async () => {//the oauth claim's expression index: the filter's spelling ma
 	await pglite.query('SET enable_seqscan = off')//a handful of rows would always seq scan, so forcing index consideration is what proves the spelling agreement; the live read-only EXPLAIN after deploy proves the real planner's own choice
 	let plan = (await pglite.query(`EXPLAIN SELECT * FROM credential_table WHERE hide = 0 AND type_text = 'Oauth.' AND json->>'identifier' = 'd123'`)).rows.map(r => Object.values(r)[0]).join('\n')
 	await pglite.query('SET enable_seqscan = on')
-	ok(plan.includes('credential15'))//the index built from the registry DDL serves the exact expression level2's filter generates
+	ok(plan.includes('credential15'))//the index built from the SQL() block's DDL serves the exact expression level2's filter generates
 })
 grid(async () => {//name: get by userTag, get by raw1, check collisions
 	let {clear} = await getDatabase()

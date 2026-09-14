@@ -4,7 +4,7 @@ The plan for removing the query vocabulary from level2, so that level3's applica
 
 ## The idea
 
-level2 holds a family of query helpers, queryGet, queryHide, queryAddRow, and their siblings, and level3 reaches the database only through them. The user wrote them early, as a small checked vocabulary for making and testing database mutations by hand, and the rest of the data layer grew up around them. The proposal is to retire the vocabulary: a level3 function would get the database from the seam that already exists and run its own supabase-js chain, with the whole query visible at the line where it runs, which table, which filters, which order. The good parts of the layer survive in some smaller form, and everything else in level2 is untouched: the doors, the envelopes, the key system, the logging, the SQL registry, and getDatabase itself.
+level2 holds a family of query helpers, queryGet, queryHide, queryAddRow, and their siblings, and level3 reaches the database only through them. The user wrote them early, as a small checked vocabulary for making and testing database mutations by hand, and the rest of the data layer grew up around them. The proposal is to retire the vocabulary: a level3 function would get the database from the seam that already exists and run its own supabase-js chain, with the whole query visible at the line where it runs, which table, which filters, which order. The good parts of the layer survive in some smaller form, and everything else in level2 is untouched: the doors, the envelopes, the key system, the logging, the SQL() blocks, and getDatabase itself.
 
 ## Scope
 

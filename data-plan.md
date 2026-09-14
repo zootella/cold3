@@ -54,7 +54,7 @@ The cleanup document sizes the three competing patterns for making a row disappe
 
 **The event-1 removed row never arrives.** It is documented in two schemas, written by one function nothing calls, and this direction is the reason it will now never be built.
 
-None of this happens at once. Each table changes in its own pass, on the expansion-and-contraction playbook, with the migration file and the registry edit landing together and grid tests beside the code.
+None of this happens at once. Each table changes in its own pass, on the expansion-and-contraction playbook, with the migration file and the SQL() block edit landing together and grid tests beside the code.
 
 ## Where each table stands
 
