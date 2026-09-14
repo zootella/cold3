@@ -11,7 +11,11 @@ The guide above governs everything written here: code, comments, and essays alik
 
 ## Planning documents
 
-Markdown documents at the monorepo root track current planning and effort. Each one holds a piece of work: what it is, what it has to decide, and what order the steps go in. Plan in one before writing code, and keep it true as the work lands.
+Markdown documents at the monorepo root track current planning and effort. Each one holds a piece of work: what it is, what it has to decide, and, when order matters, what order the steps go in. Plan in one before writing code, and keep it true as the work lands.
+
+Most of these are menus rather than sequences: a burn-down list of peer tasks, each specified in its own section, that we pick from flat, often from the middle. Work on a section, edit it as the work teaches you more, and remove it when its work lands, so the document stays true and gets shorter until it is empty and leaves. A document that prescribes an order says so; never read one top to bottom as if it did.
+
+The first draft of a new planning document frames the work and stops there: the idea, its scope, what it gains and loses, the tensions and trade-offs in it, what the work would involve, and what we still have to figure out. It does not draft granular detail, not code sketches, helper names, signatures, or step-by-step mechanics, because those decisions get made in the code, with the real situation in front of us, and a detail guessed at in a first draft is a distraction there rather than a help. Granular detail enters a document later, section by section, as a section comes up to be worked, and the user says when.
 
 If contents.md is present, read it first. It is the guide to the others and says what comes next.
 

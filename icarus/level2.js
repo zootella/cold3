@@ -1717,7 +1717,7 @@ export async function queryTop({table, title, cell}) {
 	return data[0]//data is an array with one element, or empty if none found
 }
 
-//apply the given cells to a query as equality filters; queryGet and queryHide share this so the select and the update speak identical filters
+//apply the given cells to a query as equality filters; queryGet, queryHide, queryUpdate, and queryDelete share this so every helper speaks identical filters
 //a plain-object value holds json path filters on that column, named like every other cell by its own column title: some_json: {city: 'Akron'} filters some_json->>city
 //level2 alone spells the path--callers pass bare property names, PostgREST single-quotes the key when it renders SQL, and supafake in grid renders that same spelling for PGlite
 function applyQueryCells(query, cells) {
@@ -1778,19 +1778,27 @@ export async function queryHide(table, cells, options) {//cells filters the same
 	if (error) toss('supabase', {error})
 }
 
-//change the vertical column of cells under titleSet to cellSet in all the rows that have cellFind under titleFind
-export async function queryUpdateCells({table, titleFind, cellFind, titleSet, cellSet}) {
-	checkQueryCell(titleFind, cellFind); checkQueryCell(titleSet, cellSet)
+//edit the visible rows where finds, writing every cell in set into each of them; the two are named so a caller can't swap them
+//returns the rows as they stand after the edit, an empty array when nothing matched; a json cell in set replaces the column whole, it never merges
+export async function queryUpdate(table, {where, set}) {//where filters the same way queryGet's cells do, json paths included; set is like {title1: 'cell1', title2: 'cell2', ...}
+	checkQueryTitle(table); if (!isPlain(where) || !isPlain(set)) toss('use', {table, where, set})//a call in the old positional shape fails here, by name, rather than deeper down
+	checkQueryCells(where); checkQueryRow(set)
+	if (!Object.keys(where).length || !Object.keys(set).length) toss('query', {table, where, set})//no filter would edit every row in the table, and nothing to set would edit nothing; either is a confused caller
+	for (let title of ['row_tag', 'row_tick', 'hide']) if (title in set) toss('query', {table, set})//the margins are a row's identity, its clock, and its visibility, and none is edited here
 	const {database} = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.update({[titleSet]: cellSet})//write cellSet under titleSet
-		.eq(titleFind, cellFind)//in the row where titleFind equals cellFind
-		.eq('hide', 0)//that is not hidden
-		.select()//return the updated rows
-	)
+	let query = applyQueryCells(database.from(table).update(set).eq('hide', 0), where)//among visible rows, as every reading helper filters
+	let {data, error} = await query.select()
 	if (error) toss('supabase', {error})
-	return data//data is the whole updated row, or undefined if no rows found to change
+	return data
+}
+
+//delete the rows matching the given column values, hidden or not: a row's absence is the answer, so hide is no filter here
+export async function queryDelete(table, cells) {//cells filters the same way queryGet's does, json paths included, so a caller that hid by these cells deletes by the same ones
+	checkQueryTitle(table); checkQueryCells(cells)
+	if (!Object.keys(cells).length) toss('query', {table, cells})//no filter would empty the table, which no caller means
+	const {database} = await getDatabase()
+	let {error} = await applyQueryCells(database.from(table).delete(), cells)
+	if (error) toss('supabase', {error})
 }
 
 //                                                    _       _ _             _ 
@@ -1881,7 +1889,7 @@ function checkQueryTitle(title) {//make sure the given title looks ok as a table
 function checkQueryRow(row) {//check a row like {"name_text": "bob", "hits": 789}
 	for (let [title, cell] of Object.entries(row)) checkQueryCell(title, cell)
 }
-function checkQueryCells(cells) {//check filter cells for queryGet and queryHide, where a plain-object value holds json path filters
+function checkQueryCells(cells) {//check filter cells for the helpers that take them, where a plain-object value holds json path filters
 	for (let [title, cell] of Object.entries(cells)) {
 		if (isPlain(cell)) {
 			checkQueryTitle(title)//a path filter names its column the same way every other cell does

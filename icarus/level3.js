@@ -45,7 +45,8 @@ queryGet,
 queryAddRow,
 queryAddRows,
 queryHide,
-queryUpdateCells,
+queryUpdate,
+queryDelete,
 
 //query specialized
 queryCountSince,
@@ -1432,15 +1433,8 @@ export async function settingRead(name, defaultValue) {
 export async function settingWrite(name, value) {//no ledger row: settings_table holds the demo counter and nothing about a user
 	let valueText = value+''
 	checkText(name); checkTextOrBlank(valueText)
-	let row = await queryUpdateCells({
-		table:     'settings_table',
-		titleFind: 'setting_name_text',  cellFind: name,
-		titleSet:  'setting_value_text', cellSet:  valueText,
-	})
-	if (!row) {//above didn't find a row like that to update, so we need to create one with the given name and value
-		row = {setting_name_text: name, setting_value_text: valueText}
-		await queryAddRow({table: 'settings_table', row})
-	}
+	let rows = await queryUpdate('settings_table', {where: {setting_name_text: name}, set: {setting_value_text: valueText}})//edit the setting's row in place
+	if (!rows.length) await queryAddRow({table: 'settings_table', row: {setting_name_text: name, setting_value_text: valueText}})//no row of that name yet, so create one with the given name and value
 }
 
 //  _             _ _   _        _     _      

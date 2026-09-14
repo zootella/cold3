@@ -178,7 +178,8 @@ queryGetAny,
 queryAddRow,
 queryAddRows,
 queryHide,
-queryUpdateCells,
+queryUpdate,
+queryDelete,
 
 //query specialized
 queryCountSince,

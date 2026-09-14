@@ -16,7 +16,7 @@ decryptKeys, getDatabase, sqlList, setTestDatabase,
 sealEnvelope, openEnvelope, openBrownie, sealBrownie,
 originDomain,
 doorAsyncLocalStorageRun,
-queryGet, queryGetAny, queryAddRow, queryAddRows, queryHide, queryTop, queryCountRows, queryCountAllRows,
+queryGet, queryGetAny, queryAddRow, queryAddRows, queryHide, queryUpdate, queryDelete, queryTop, queryCountRows, queryCountAllRows,
 } from './level2.js'
 import {
 ledgerAdd, ledgerAddMany, otpConstants, recordHit,
@@ -1597,6 +1597,65 @@ grid(async () => {//json: path filters--a plain-object value in the cells reads 
 	ok((await queryGet('example_table', {some_json: {city: 'Tokyo'}})).length == 0)//hidden now
 	ok((await queryGet('example_table', {some_json: {city: 'Osaka'}})).length == 1)//the neighbor rides on
 })
+grid(async () => {//queryUpdate: edit cells in place, where filtering the way queryGet's cells do and set naming the new values, and get back the rows as they stand after
+	let {clear} = await getDatabase()
+	await clear('example_table')
+	let hash1 = random32(), hash2 = random32()
+	await queryAddRows({table: 'example_table', rows: [
+		{name_text: 'alice', hits: 1, some_hash: hash1, some_json: {city: 'Tokyo'}},
+		{name_text: 'bob',   hits: 2, some_hash: hash2, some_json: {city: 'Osaka'}},
+	]})
+
+	let rows = await queryUpdate('example_table', {where: {name_text: 'alice'}, set: {hits: 10}})//one cell in one row
+	ok(rows.length == 1 && rows[0].hits == 10 && rows[0].name_text == 'alice')//the row comes back as it stands after
+	ok((await queryGet('example_table', {name_text: 'bob'}))[0].hits == 2)//the neighbor is untouched
+
+	rows = await queryUpdate('example_table', {where: {some_json: {city: 'Osaka'}}, set: {name_text: 'bobby', some_json: {city: 'Kyoto', moved: true}}})//several cells at once, found by a json path, the json column replaced whole
+	ok(rows.length == 1 && rows[0].name_text == 'bobby' && makeText(rows[0].some_json) == '{"city":"Kyoto","moved":true}')//the object went in as an object and came back as one
+	ok((await queryGet('example_table', {some_json: {city: 'Osaka'}})).length == 0)//the old value is gone, not merged under the new
+
+	rows = await queryUpdate('example_table', {where: {name_text: 'nobody'}, set: {hits: 99}})
+	ok(rows.length == 0)//nothing matched, and an empty array says so
+
+	await queryHide('example_table', {name_text: 'alice'})
+	rows = await queryUpdate('example_table', {where: {name_text: 'alice'}, set: {hits: 11}})
+	ok(rows.length == 0)//a hidden row is out of reach, the same as for every other helper today
+
+	let tossed
+	tossed = false; try { await queryUpdate('example_table', {where: {}, set: {hits: 1}}) } catch (e) { tossed = true }
+	ok(tossed)//no filter would edit every row
+	tossed = false; try { await queryUpdate('example_table', {where: {name_text: 'alice'}, set: {}}) } catch (e) { tossed = true }
+	ok(tossed)//nothing to set would edit nothing
+	tossed = false; try { await queryUpdate('example_table', {name_text: 'alice'}, {hits: 1}) } catch (e) { tossed = true }
+	ok(tossed)//the old positional shape is refused by name, so the two objects can't be swapped by accident
+	tossed = false; try { await queryUpdate('example_table', {where: {name_text: 'alice'}, set: {row_tick: 5}}) } catch (e) { tossed = true }
+	ok(tossed)//a margin is never edited: row_tick means when the row was added
+})
+grid(async () => {//queryDelete: remove rows by the same filters, hidden or not, and refuse to run with no filter at all
+	let {clear} = await getDatabase()
+	await clear('example_table')
+	let hash1 = random32(), hash2 = random32()
+	await queryAddRows({table: 'example_table', rows: [
+		{name_text: 'alice', hits: 1, some_hash: hash1, some_json: {city: 'Tokyo'}},
+		{name_text: 'alice', hits: 2, some_hash: hash2, some_json: {city: 'Osaka'}},
+		{name_text: 'bob',   hits: 3, some_hash: hash1, some_json: {city: 'Tokyo'}},
+	]})
+
+	await queryDelete('example_table', {name_text: 'alice', some_hash: hash1})//two cells, both must match
+	ok((await queryGet('example_table', {name_text: 'alice'})).length == 1)//alice with hash2 remains
+	ok((await queryGet('example_table', {name_text: 'bob'})).length == 1)//bob is untouched
+
+	await queryDelete('example_table', {some_json: {city: 'Tokyo'}})//a json path filter, the shape a challenge is found by
+	ok((await queryGet('example_table', {name_text: 'bob'})).length == 0)
+	ok(await queryCountAllRows({table: 'example_table'}) == 1)//only alice with hash2 stands
+
+	await queryHide('example_table', {name_text: 'alice'})//hide the last row, then delete it: hidden rows go too
+	await queryDelete('example_table', {name_text: 'alice'})
+	ok(await queryCountAllRows({table: 'example_table'}) == 0)//absence is the answer, so hide is no filter for a delete
+
+	let tossed = false; try { await queryDelete('example_table', {}) } catch (e) { tossed = true }
+	ok(tossed)//no filter would empty the table
+})
 
 grid(async () => {
 	let {clear} = await getDatabase()
@@ -1818,7 +1877,7 @@ class FakeSupabaseQueryBuilder {
 	async _update() {
 		let {sql: whereSQL, params: whereParams} = this._where()
 		let setCols = Object.keys(this.updateData)
-		let setVals = Object.values(this.updateData)
+		let setVals = Object.values(this.updateData).map(v => (v && typeof v == 'object' && !Array.isArray(v)) ? makeText(v) : v)//a json cell binds as its printed text, the same trip _insert gives it
 		let setParts = setCols.map((col, i) => `${col} = $${i + 1}`)
 		let allParams = [...setVals, ...whereParams]
 		let adjustedWhere = whereSQL.replace(/\$(\d+)/g, (_, n) => `$${parseInt(n) + setCols.length}`)
