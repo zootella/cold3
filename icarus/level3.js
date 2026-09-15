@@ -573,6 +573,7 @@ export const walletConstants = Object.freeze({
 })
 
 //wallet: a user can prove they control up to walletConstants.limit Ethereum addresses, and no two users can hold the same one
+//one Proven. row per address held and one Challenged. row per address in flight, the challenge edited into the proof when the signature checks out; a mention is a ledger row only
 //the address rides the f triad: f0 the lowercased address to match as unique, f1 and f2 both the EIP-55 checksummed face
 
 //validate an ethereum address into the three forms; any casing is accepted, and text that isn't an address returns {ok: false}
@@ -611,27 +612,31 @@ export async function credentialWalletRefusal({userTag, address}) {
 	return false
 }
 
-//record proof a user controls an Ethereum address; returns {ok: true} on insert, or {ok: false, outcome} when a rule declines it
+//record proof a user controls an Ethereum address; returns {ok: true} once the proof stands, or {ok: false, outcome} when a rule declines it
 //the rules live here beside the write rather than up at the endpoint, so no path can reach the table around them
-//nonce is the challenge that proved it, kept in the row's json so the proof points at its history; blank for a proof set directly, as the tests do
+//nonce names the challenge that proved it, which becomes the proof; blank for a proof set directly, as the tests do, which inserts one
 export async function credentialWalletSet({userTag, address, nonce = ''}) {
 	checkTag(userTag); checkText(address); checkTagOrBlank(nonce)
 	let v = await validateWallet(address); if (!v.ok) toss('use', {address})
 	let forms = {f0: v.f0, f1: v.f1, f2: v.f2}//the address in its three forms, on every ledger row this writes
 	let outcome = await credentialWalletRefusal({userTag, address})
+	if (!outcome && nonce) {//the proof is the challenge this nonce names, edited into it: one statement spends the nonce and records the proof, so a replayed signature finds nothing to spend
+		let rows = await queryUpdate('credential_table', {where: {hide: 0, user_tag: userTag, type_text: 'Ethereum.', f0_text: v.f0, event_text: 'Challenged.', json: {nonce}}, set: {event_text: 'Proven.'}})//the nonce and the connector stay in json, so the proof keeps the challenge's story
+		if (!rows.length) outcome = 'Expired.'//already spent, by another tab or by a replay that got in first
+	}
 	if (outcome) {
-		await ledgerAdd({action: 'Ethereum.', event: 'Refused.', userTag, tag: nonce, json: {address: forms, outcome}})//every refusal, the contested WalletClaimedElsewhere. and the user's own WalletAlreadyProven. and WalletFull. alike, from this one line; the nonce is this flow's challenge tag, and blank when a test set the proof directly
+		await ledgerAdd({action: 'Ethereum.', event: 'Refused.', userTag, tag: nonce, json: {address: forms, outcome}})//every refusal from this one line, the contested, the user's own, and a spent nonce's Expired.; the nonce is the flow's challenge tag, blank when a test set the proof directly
 		return {ok: false, outcome}
 	}
-	await credentialSet({userTag, type: 'Ethereum.', event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2, json: nonce ? {nonce} : {}})//an absent key is the blank of a property
+	if (!nonce) await credentialSet({userTag, type: 'Ethereum.', event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2})//a proof set directly, with no challenge behind it to become it
 	await ledgerAdd({action: 'Ethereum.', event: 'Proven.', userTag, tag: nonce, json: {address: forms}})//the nonce that proved it in the tag margin, gathering the proof with the challenge it answers
 	return {ok: true}
 }
 
-export async function credentialWalletRemove({userTag, f0}) {//hide this user's proof of one address, freeing their slot and releasing the address for anyone to prove
+export async function credentialWalletRemove({userTag, f0}) {//delete this user's proof of one address, freeing their slot and releasing the address for anyone to prove
 	checkTag(userTag); checkText(f0)
 	let v = await validateWallet(f0); if (!v.ok) toss('use', {f0})
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: v.f0, event_text: 'Proven.'})
+	await queryDelete('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: v.f0})//every row of hers about this address, the proof and any challenge in flight: absence is the answer
 	await ledgerAdd({action: 'Ethereum.', event: 'Removed.', userTag, json: {address: {f0: v.f0, f1: v.f1, f2: v.f2}}})
 }
 
@@ -641,11 +646,12 @@ which builds the SIWE message around it and asks the wallet to sign; step 2 the 
 it. Between the steps the nonce lives on the Challenged. row step 1 writes, in json, so step 2 can prove the nonce is
 one we issued: it parses the nonce out of the signed message and looks for this user's challenge for this address that
 carries it, written in the last twenty minutes. A nonce we never minted, one minted for someone else or another address,
-one past its time, or one already spent all fail that lookup the same way. Once the signature checks out, step 2 hides
-the challenge, so a captured signature replayed later finds its nonce gone; EIP-4361 gives the nonce to prevent replay
-and leaves how to us, and spending it is the plain way. The proof keeps the nonce in its own json, so from the proven
-row a person finds the hidden challenge it answered, and the challenge keeps which connector the page used, so the two
-rows together tell how the proof went: started when, over the extension or the relay, and finished when.
+one past its time, or one already spent all fail that lookup the same way. Once the signature checks out, step 2 edits
+the challenge into the proof in one statement, which spends the nonce and records the proof at once, so a captured
+signature replayed later finds nothing to spend; EIP-4361 gives the nonce to prevent replay and leaves how to us, and
+spending it is the plain way. The proof keeps the challenge's json, the nonce and which connector the page used, and the
+ledger keeps the moments, so together they tell how the proof went: started when, over the extension or the relay, and
+finished when.
 
 Both steps live here rather than at the endpoint so a grid test can walk the whole flow, including a real signature from
 a generated key. The endpoint above is left holding only what it alone knows: the shape of the request.
@@ -666,8 +672,7 @@ export async function credentialWalletProve1({userTag, address, connector}) {
 	let v = await validateWallet(address); if (!v.ok) toss('use', {address})//the page connected a real wallet, so anything else is a broken caller
 
 	let forms = {f0: v.f0, f1: v.f1, f2: v.f2}//the address in its three forms, on every ledger row this writes
-	await credentialSet({userTag, type: 'Ethereum.', event: 'Mentioned.', f0: v.f0, f1: v.f1, f2: v.f2})//the mention: this user mentioned this address, recorded before we decide, so a refused attempt still leaves its trace
-	await ledgerAdd({action: 'Ethereum.', event: 'Mentioned.', userTag, json: {address: forms, connector}})
+	await ledgerAdd({action: 'Ethereum.', event: 'Mentioned.', userTag, json: {address: forms, connector}})//the mention, recorded before we decide so a refused attempt still leaves its trace; a ledger row only, since a mention is history and not a credential
 
 	let outcome = await credentialWalletRefusal({userTag, address})
 	if (outcome) {//refuse at the start, so the user is never sent to their wallet to sign for a proof we would decline at the end
@@ -676,6 +681,7 @@ export async function credentialWalletProve1({userTag, address, connector}) {
 	}
 
 	let nonce = Tag()//21 base62 characters; the page embeds this in the SIWE message it asks the wallet to sign
+	await queryDelete('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: v.f0, event_text: 'Challenged.'})//one challenge per address in flight: starting again, from another tab or after walking away, replaces the earlier one, whose nonce dies with it
 	await credentialSet({userTag, type: 'Ethereum.', event: 'Challenged.', f0: v.f0, f1: v.f1, f2: v.f2, json: {nonce, connector}})//the challenge: we challenged this address with this nonce, row_tick is its clock, and the connector is how she connected
 	await ledgerAdd({action: 'Ethereum.', event: 'Challenged.', userTag, tag: nonce, json: {address: forms, connector}})
 	return {nonce}
@@ -730,9 +736,9 @@ export async function credentialWalletProve2({userTag, address, message, signatu
 	}
 	if (!valid) return await refuse('BadSignature.')
 
-	//the signature checks out: spend the nonce, then save the proof
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: v.f0, event_text: 'Challenged.', json: {nonce}})//this challenge alone, so a captured signature replayed later finds its nonce gone; hidden before the write, so a failure between leaves a spent nonce and no proof, and she starts over with a fresh one
-	return await credentialWalletSet({userTag, address, nonce})//the rules run again here, because the minutes the user spent signing were long enough for another tab or another account to change the answer
+	//the signature checks out: credentialWalletSet spends the nonce and saves the proof in one statement, after running the rules again,
+	//because the minutes the user spent signing were long enough for another tab or another account to change the answer
+	return await credentialWalletSet({userTag, address, nonce})
 }
 
 //                    _            _   _       _                     _   _     

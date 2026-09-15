@@ -424,6 +424,7 @@ grid(async () => {//wallet: a user proves two addresses, and the third is refuse
 	let mine = await credentialWalletGet({userTag})
 	ok(mine.length == 1 && mine[0] == wallet2)//removal takes only the address named, leaving the other proof alone
 	ok((await credentialWalletSet({userTag, address: wallet3})).ok)//and the freed slot accepts the new wallet
+	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 2)//two rows, hidden or not: the retired wallet's is gone
 
 	let ledger = await _ledger(userTag, 'Ethereum.')//three proofs, one refusal, one remove, every row carrying its address in json and no hash
 	ok(ledger.length == 5 && ledger.filter(r => r.event_text == 'Proven.').length == 3 && ledger.filter(r => r.event_text == 'Removed.').length == 1)
@@ -464,7 +465,7 @@ grid(async () => {//wallet: a remove reaches only this user's own rows, and only
 	ok((await credentialWalletSet({userTag: alice, address: aliceWallet})).ok)
 	ok((await credentialWalletSet({userTag: bob, address: bobWallet})).ok)
 
-	//bob names alice's address on a remove of his own; the query is scoped to his rows, so it finds nothing to hide
+	//bob names alice's address on a remove of his own; the query is scoped to his rows, so it finds nothing to delete
 	await credentialWalletRemove({userTag: bob, f0: aliceWallet})
 	ok((await credentialWalletHolder({f0: aliceWallet})).userTag == alice)//alice's proof stands
 	ok((await credentialWalletGet({userTag: bob}))[0] == bobWallet)//and bob's own is untouched
@@ -480,11 +481,12 @@ grid(async () => {//wallet: retired proofs hold neither a slot nor the address, 
 	let wallet2 = '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
 	let wallet3 = '0x00000000219ab540356cBB839Cbe05303d7705Fa'
 
-	for (let address of [wallet1, wallet2, wallet3]) {//three rotations in a row, each leaving a hidden row behind
+	for (let address of [wallet1, wallet2, wallet3]) {//three rotations in a row, each leaving nothing behind
 		ok((await credentialWalletSet({userTag, address})).ok)
 		await credentialWalletRemove({userTag, f0: address})
 	}
-	ok((await credentialWalletGet({userTag})).length == 0)//three retired rows sit under this user, and none of them holds a slot
+	ok((await credentialWalletGet({userTag})).length == 0)//nothing holds a slot
+	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 0)//and nothing sits under this user at all; the ledger holds the six moments
 	ok((await credentialWalletSet({userTag, address: wallet1})).ok)//so the wallet retired first is free to come back
 	ok((await credentialWalletSet({userTag, address: wallet2})).ok)
 	ok((await credentialWalletGet({userTag})).length == 2)//and the limit counts only what's live
@@ -516,15 +518,17 @@ grid(async () => {//wallet prove: the whole flow, nonce to saved proof, with a r
 
 	let prove = await credentialWalletProve1({userTag, address: account.address, connector: 'Injected.'})//step 1: the page asks for a nonce
 	ok(!prove.outcome && hasText(prove.nonce))
-	ok((await credentialWalletGet({userTag})).length == 0)//nothing proven yet; step 1 only wrote the mention and the challenge
+	ok((await credentialWalletGet({userTag})).length == 0)//nothing proven yet; step 1 wrote the challenge, and the mention went to the ledger only
+	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 1)//one row, the challenge
 	let rows = await challenges()
 	ok(rows.length == 1 && rows[0].json.nonce == prove.nonce && rows[0].json.connector == 'Injected.' && rows[0].hash_text == '')//the challenge carries the nonce and how she connected, and belongs to the user, not to a browser
 
 	let signed = await _walletTestSign({account, nonce: prove.nonce})//the wallet signs what the page built
 	ok((await credentialWalletProve2({userTag, address: account.address, ...signed})).ok)
 	ok((await credentialWalletGet({userTag}))[0] == account.address)//step 2 checked the signature and saved the proof
-	ok((await credentialRows({user_tag: userTag, type_text: 'Ethereum.', event_text: 'Proven.'}))[0].json.nonce == prove.nonce)//and the proof names the challenge that proved it
-	ok((await challenges()).length == 0)//and spent the nonce: the challenge is hidden
+	let proof = (await credentialRows({user_tag: userTag, type_text: 'Ethereum.', event_text: 'Proven.'}))[0]
+	ok(proof.row_tag == rows[0].row_tag && proof.json.nonce == prove.nonce && proof.json.connector == 'Injected.')//the proof is the challenge's own row, edited to Proven. with its json intact
+	ok((await challenges()).length == 0 && (await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 1)//and spent the nonce: nothing is left in flight, and nothing else was written
 
 	let ledger = await _ledger(userTag, 'Ethereum.')//the three rows the flow leaves: the mention, the challenge, and the proof
 	let mentioned = ledger.find(r => r.event_text == 'Mentioned.'), challenged = ledger.find(r => r.event_text == 'Challenged.'), proven = ledger.find(r => r.event_text == 'Proven.')
@@ -578,7 +582,7 @@ grid(async () => {//wallet prove: only the connected wallet's own signature, ove
 	let refused = await _ledger(userTag, 'Ethereum.', 'Refused.')//every push on the flow is on the record: a forged signature, a nonce we never issued, text that isn't a message, and the spent nonce twice
 	ok(refused.length == 5 && refused.filter(r => r.json.outcome == 'BadSignature.').length == 2 && refused.filter(r => r.json.outcome == 'Expired.').length == 3)
 })
-grid(async () => {//wallet prove: two tabs proving the same address each hold their own nonce, and the slower one meets the rules
+grid(async () => {//wallet prove: two tabs proving the same address: the newer start replaces the older, whose signature then finds nothing to spend
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
@@ -587,14 +591,16 @@ grid(async () => {//wallet prove: two tabs proving the same address each hold th
 
 	let tab1 = await credentialWalletProve1({userTag, address: account.address, connector: 'Injected.'})
 	let tab2 = await credentialWalletProve1({userTag, address: account.address, connector: 'Injected.'})
-	ok(tab1.nonce != tab2.nonce && (await challenges()).length == 2)//two challenges, one per tab
+	let standing = await challenges()
+	ok(tab1.nonce != tab2.nonce && standing.length == 1 && standing[0].json.nonce == tab2.nonce)//one challenge per address in flight: the second tab's start replaced the first's
 
-	let signed2 = await _walletTestSign({account, nonce: tab2.nonce})
-	ok((await credentialWalletProve2({userTag, address: account.address, ...signed2})).ok)//the second tab finishes first
 	let signed1 = await _walletTestSign({account, nonce: tab1.nonce})
 	let late = await credentialWalletProve2({userTag, address: account.address, ...signed1})
-	ok(!late.ok && late.outcome == 'WalletAlreadyProven.')//the first tab's challenge was still its own, found by its nonce and signed correctly, and the rules answer that the address is already hers
-	ok((await challenges()).length == 0)//both nonces spent
+	ok(!late.ok && late.outcome == 'Expired.')//the first tab signed a nonce that no longer exists, so it starts over
+	let signed2 = await _walletTestSign({account, nonce: tab2.nonce})
+	ok((await credentialWalletProve2({userTag, address: account.address, ...signed2})).ok)//the second tab finishes
+	ok((await challenges()).length == 0 && (await credentialWalletGet({userTag})).length == 1)//nothing in flight, one proof
+	ok((await credentialWalletProve2({userTag, address: account.address, ...signed2})).outcome == 'Expired.')//and the finished signature replayed finds nothing to spend
 })
 grid(async () => {//wallet prove: a refused flow never mints a nonce, so the wallet is never opened
 	let {clear} = await getDatabase()
@@ -610,9 +616,7 @@ grid(async () => {//wallet prove: a refused flow never mints a nonce, so the wal
 	ok(prove.outcome == 'WalletFull.')
 	ok(!prove.nonce)//nothing to sign against, so the page can't open a signature request
 
-	let rows = await credentialRows({user_tag: userTag, type_text: 'Ethereum.', f0_text: wallet3.toLowerCase()})//mentions write the triad now, f0 in the matching lowercase form
-	ok(rows.length == 1 && rows[0].event_text == 'Mentioned.')//the mention is on the record, and no challenge row, because we never challenged
-	ok(rows[0].f1_text == wallet3 && rows[0].f2_text == wallet3)//and the mention carries the whole triad: the backfill's blank-f1 guard trusts that every row the new code writes is complete
+	ok((await credentialRows({user_tag: userTag, type_text: 'Ethereum.', f0_text: wallet3.toLowerCase()})).length == 0)//no row at all: the mention is a ledger row, and no challenge, because we never challenged
 
 	let f0 = wallet3.toLowerCase()
 	let ledger = (await _ledger(userTag, 'Ethereum.')).filter(r => r.json.address.f0 == f0)//the mention and the refusal, under the address that was refused
