@@ -927,7 +927,8 @@ export async function credentialOtpRemove({userTag, type, f0}) {//hide every eve
 //  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_| |_.__/|_|  \___/ \_/\_/ |___/\___|_|   
 //                                                                                       
 
-//browser: user is signed in at this browser; browserHash is the row's hash, and the note stays empty
+//browser: one Proven. row per browser a user is signed in at, hash_text holding the browser hash and the note empty
+//sign-in takes the browser over, one row per hash whoever's it was, and sign-out anywhere deletes every row of the user's, so it means everywhere
 export async function credentialBrowserGet({browserHash}) {//what user, if any, is signed in at this browser?
 	checkHash(browserHash)
 	let rows = await credentialRows({type_text: 'Browser.', hash_text: browserHash, event_text: 'Proven.'})//the hottest query in the application, riding credential13
@@ -937,12 +938,13 @@ export async function credentialBrowserGet({browserHash}) {//what user, if any, 
 }
 export async function credentialBrowserSet({userTag, browserHash}) {//sign this user in at this browser
 	checkTag(userTag); checkHash(browserHash)
+	await queryDelete('credential_table', {type_text: 'Browser.', hash_text: browserHash})//whatever session this browser held, whoever's: a stale tab signing in over someone else takes the browser rather than stacking on them
 	await credentialSet({userTag, type: 'Browser.', event: 'Proven.', hash: browserHash})
 	await ledgerAdd({action: 'Browser.', event: 'Proven.', userTag, hash: browserHash})//hash_text is the browser signed in, so the session is found by browser as well as by user; browser_hash is the browser that asked, the same one in production
 }
 export async function credentialBrowserRemove({userTag}) {//sign this user out everywhere
 	checkTag(userTag)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Browser.', event_text: 'Proven.'})
+	await queryDelete('credential_table', {user_tag: userTag, type_text: 'Browser.'})//every session of hers on every browser: sign out anywhere is sign out everywhere
 	await ledgerAdd({action: 'Browser.', event: 'Removed.', userTag})//one row for the user, with no hash, because every session ends at once; the sessions it ended are the Proven. rows above it in her history
 }
 

@@ -80,6 +80,8 @@ The point of getting large, real, user-involved flows under automated test is wh
 
 That changes what a person's attention is for. It stops being spent re-deriving whether an expired envelope is handled or whether a second account can claim an address, and gets spent on the things only a person can judge: whether the wallet dialog appears when it should and stays shut when it shouldn't, whether the copy makes sense to someone who doesn't already know the answer, whether the page feels right. Those are worth a human. Re-checking a guard by hand is not.
 
+That puts the weight where the risk is. The endpoint, the wire, and the hosted data are rarely where a mistake lives; the application logic is, in a corner case nobody wrote down, and the application logic is exactly what grid tests can reach. So every flow's grid tests are audited, and improved when they fall short, against one standard: the happy path, the sad paths the user can hit, the mildly chaotic paths a real person produces, a stale tab, a repeated click, a second device, and the plausible attacks, each one written as a test that confirms the honest user succeeds and the attacker is turned away. A flow whose tests cover only the happy path is not covered.
+
 It also gives us a rule for reading the smoke test's results. **A surprise during manual testing is a bug report against the suite, not only against the code.** Whatever broke reached a person's hands because no test stood between, so the fix has two halves: repair the behavior, and write the test that would have caught it. Handled that way, the manual pass gets quieter every time, and the ceremony is earned rather than hoped for.
 
 ## Done: the wallet prove flow (July 2026)

@@ -724,10 +724,13 @@ grid(async () => {//browser: sign out removes all sessions for one user
 	await credentialBrowserRemove({userTag})//sign out everywhere
 	ok((await credentialBrowserGet({browserHash: browser1})) == false)//both sessions gone
 	ok((await credentialBrowserGet({browserHash: browser2})) == false)
+	ok(await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag}) == 0)//deleted, not hidden
+	await credentialBrowserRemove({userTag})//a second sign-out, from a stale tab that still showed her signed in
+	ok((await credentialBrowserGet({browserHash: browser1})) == false)//finds nothing to end and harms nothing
 
-	let ledger = await _ledger(userTag, 'Browser.')//the two sign-ins and the sign-out
+	let ledger = await _ledger(userTag, 'Browser.')//the two sign-ins and the two sign-outs
 	let removed = ledger.filter(r => r.event_text == 'Removed.'), proven = ledger.filter(r => r.event_text == 'Proven.')
-	ok(ledger.length == 3 && removed.length == 1 && removed[0].hash_text == '')//one row for the sign-out, with no hash, since every session ended at once; the sessions it ended are the sign-ins beside it
+	ok(ledger.length == 4 && removed.length == 2 && removed.every(r => r.hash_text == ''))//one row per sign-out asked for, the stale tab's included, with no hash, since every session ends at once; the sessions ended are the sign-ins beside it
 	ok(proven.length == 2 && proven.some(r => r.hash_text == browser1) && proven.some(r => r.hash_text == browser2))//each sign-in names the browser signed in, so a session is found by browser as well as by user
 	ok(ledger.every(r => r.browser_hash == gridDoor.browserHash))//and the browser that asked is the door's, on every row
 })
@@ -748,6 +751,13 @@ grid(async () => {//browser: multi-user flow, sign out doesn't affect other user
 	ok((await credentialBrowserGet({browserHash: browserA})) == false)//user1 gone from A and C
 	ok((await credentialBrowserGet({browserHash: browserC})) == false)
 	ok((await credentialBrowserGet({browserHash: browserB})).userTag == user2)//user2 unaffected at B
+
+	await credentialBrowserSet({userTag: user1, browserHash: browserB})//user1 signs in at B over user2, from a stale tab or a request made by hand
+	ok((await credentialBrowserGet({browserHash: browserB})).userTag == user1)//B is user1's now
+	ok(await queryCountRows({table: 'credential_table', titleFind: 'hash_text', cellFind: browserB}) == 1)//one row per browser, whoever's it is
+	await credentialBrowserRemove({userTag: user1})//user1 signs out again
+	ok((await credentialBrowserGet({browserHash: browserB})) == false)//and B is nobody's, not user2's again
+	ok((await _ledger(user1, 'Browser.', 'Proven.')).length == 3 && (await _ledger(user1, 'Browser.', 'Removed.')).length == 2)//every sign-in and every sign-out of user1's is on the record
 })
 grid(async () => {//per-type writes fill hash_text and the note per the k-to-note map
 	let {clear} = await getDatabase()
