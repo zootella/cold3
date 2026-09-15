@@ -422,17 +422,17 @@ export async function credentialPasswordVerify({raw, hash}) {
 //  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|  \__\___/ \__| .__/ 
 //                                                             |_|    
 
-//totp: a user can have a single proven enrollment or nothing, and one enrollment in flight; each is a row in credential_table, with the shared secret key that generates codes in json
+//totp: one Totp. row per user, or none: Challenged. while she is enrolling and Proven. once the first code checks out, the same row edited from one stage to the other, with the shared secret that generates codes in json
 async function _totpRead({userTag}) {//one query for everything totp knows about a user: her secret if enrolled, and the one she's enrolling with if mid-flow, each blank otherwise; the one place a start is read, so the clock below holds everywhere
 	checkTag(userTag)
 	let rows = await credentialRows({user_tag: userTag, type_text: 'Totp.'})//every visible Totp. row, newest first
 	let proven = rows.find(r => r.event_text == 'Proven.')
-	let enrolling = rows.find(r => r.event_text == 'Challenged.')//the newest start; enroll1 hides earlier ones, so at most one is visible
+	let enrolling = rows.find(r => r.event_text == 'Challenged.')//the newest start; enroll1 deletes an earlier one, so at most one stands
 	let live = enrolling && Now() < enrolling.row_tick + Limit.expirationUser//a start lives twenty minutes; a stale one reads as none, which is graceful for a slow user, not an attacker
 	return {secret: proven ? proven.json.secret : '', enrollingSecret: live ? enrolling.json.secret : ''}
 }
-async function _totpHideStarts({userTag}) {//hide every visible start of this user's; a hidden start stays in the table as evidence that she tried
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Totp.', event_text: 'Challenged.'})
+async function _totpDeleteChallenge({userTag}) {//delete the user's Challenged. row, the start of her enrollment; the ledger row that opened it is the evidence that she tried
+	await queryDelete('credential_table', {user_tag: userTag, type_text: 'Totp.', event_text: 'Challenged.'})
 }
 export async function credentialTotpGet({userTag}) {//the totp snapshot: {secret, enrollment}, the proven secret in base32 or blank, and the in-flight enrollment {uri, identifier} for the page to draw as a qr code, or false
 	let {secret, enrollingSecret} = await _totpRead({userTag})
@@ -443,15 +443,16 @@ export async function credentialTotpGet({userTag}) {//the totp snapshot: {secret
 	}
 	return {secret, enrollment}
 }
+//make the user's one Totp. row a proof with this secret: the start she is finishing edited in place, an old enrollment replaced, or a row inserted when she has neither
 export async function credentialTotpSet({userTag, secret}) {
 	checkTag(userTag)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Totp.', event_text: 'Proven.'})
-	await credentialSet({userTag, type: 'Totp.', event: 'Proven.', json: {secret}})
+	let rows = await queryUpdate('credential_table', {where: {hide: 0, user_tag: userTag, type_text: 'Totp.'}, set: {event_text: 'Proven.', json: {secret}}})//hide: 0 keeps an old hidden row out of it while credential_table still has the column
+	if (!rows.length) await credentialSet({userTag, type: 'Totp.', event: 'Proven.', json: {secret}})
 	await ledgerAdd({action: 'Totp.', event: 'Proven.', userTag})//the enrollment, on the record; the secret never rides the ledger
 }
 export async function credentialTotpRemove({userTag}) {
 	checkTag(userTag)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Totp.', event_text: 'Proven.'})
+	await queryDelete('credential_table', {user_tag: userTag, type_text: 'Totp.'})//her one Totp. row, whichever stage it is in: absence is the answer
 	await ledgerAdd({action: 'Totp.', event: 'Removed.', userTag})
 }
 
@@ -496,9 +497,9 @@ person to sign in at a shared browser finds nothing of theirs to resume, and onl
 Browser. row already vouches for, can find her start at all. A start lives twenty minutes from its row_tick, checked in
 _totpRead, the one place a start is read, so a stale start is inert everywhere at once and nothing needs to sweep it.
 
-One enrollment is in flight per user, so starting again hides the earlier start, at this browser or any other, and at
-most one is visible. Finishing hides it too, or she could enroll, remove the enrollment inside its twenty minutes, and
-be shown the qr code of the enrollment she just discarded. Hidden starts stay in the table as evidence that she tried.
+One enrollment is in flight per user, so starting again deletes the earlier start, at this browser or any other, and at
+most one stands. Finishing edits the start into the enrollment itself, so she is never shown the qr code of an enrollment
+she then removed. The ledger rows are the evidence that she tried.
 */
 
 async function _totpEnrollAccount(userTag) {//name the entry in the user's authenticator app, so they can tell ours apart from everyone else's
@@ -513,7 +514,7 @@ export async function credentialTotpEnroll1({userTag}) {
 	if (secret) toss('state', {userTag})//the page thought enrollment was possible, and one user holds one enrollment
 
 	let enrollment = await totpEnroll({brand: Key('domain, public'), account: await _totpEnrollAccount(userTag), label: true})
-	await _totpHideStarts({userTag})//one enrollment in flight per user, so starting again replaces an abandoned start
+	await _totpDeleteChallenge({userTag})//one enrollment in flight per user, so starting again replaces an abandoned start
 	await credentialSet({userTag, type: 'Totp.', event: 'Challenged.', json: {secret: enrollment.secret}})//the start, with row_tick as its clock
 	await ledgerAdd({action: 'Totp.', event: 'Challenged.', userTag})//the start, on the record, without its secret
 	return {uri: enrollment.uri, identifier: enrollment.identifier}
@@ -531,16 +532,15 @@ export async function credentialTotpEnroll2({userTag, code}) {
 	let valid = await totpValidate({secret: Data({base32: enrollingSecret}), code})
 	if (!valid) return {ok: false, outcome: 'BadCode.'}//rate limiting not necessary during enrollment, because the page is already showing the secret in the qr uri, so guarding guesses would defend nothing; the start stands, so she can try again with the code in front of her
 
-	await credentialTotpSet({userTag, secret: enrollingSecret})
-	await _totpHideStarts({userTag})//finished; nothing left in flight to resume, even if she removes the enrollment inside the start's twenty minutes
+	await credentialTotpSet({userTag, secret: enrollingSecret})//the start becomes the enrollment, the same row edited to Proven., so nothing is left in flight to resume
 	return {ok: true}
 }
 
-//the user backed out of an enrollment in flight; hide her start, and the snapshot in the same response cleans the page up
+//the user backed out of an enrollment in flight; delete her start, and the snapshot in the same response cleans the page up
 //idempotent, because a stale tab can cancel what another tab already finished or cancelled
 export async function credentialTotpClear({userTag}) {
 	checkTag(userTag)
-	await _totpHideStarts({userTag})
+	await _totpDeleteChallenge({userTag})
 	await ledgerAdd({action: 'Totp.', event: 'Cancelled.', userTag})//one row per cancel the page sends, a stale tab's second one included: the row records what was asked, not what changed
 }
 

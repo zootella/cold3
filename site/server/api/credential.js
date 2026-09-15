@@ -170,7 +170,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			}
 
 		// 🟠 totp
-		//the user backed out of an enrollment in flight; hide their start, and the tail's snapshot cleans the page up
+		//the user backed out of an enrollment in flight; delete their start, and the tail's snapshot cleans the page up
 		} else if (action == 'TotpClear.') {
 			await credentialTotpClear({userTag: user.userTag})//a stale tab cancelling twice is a harmless no-op
 

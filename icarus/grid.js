@@ -218,9 +218,11 @@ grid(async () => {//password: set, change, verify single active, remove
 	await credentialPasswordRemove({userTag})
 	ok((await credentialPasswordGet({userTag})) == false)//now gone
 	ok(await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag}) == 0)//deleted, not hidden
+	await credentialPasswordRemove({userTag})//a stale tab removes again: nothing to delete, and harmless
+	ok((await credentialPasswordGet({userTag})) == false)
 
-	let ledger = await _ledger(userTag, 'Password.')//three rows: the first set, the change, the remove; the cycles ride and the hash never does
-	ok(ledger.length == 3 && ledger.filter(r => r.event_text == 'Removed.').length == 1 && ledger.some(r => r.json.cycles == 100) && ledger.some(r => r.json.cycles == 200))
+	let ledger = await _ledger(userTag, 'Password.')//four rows: the first set, the change, and both removes, since each records what was asked; the cycles ride and the hash never does
+	ok(ledger.length == 4 && ledger.filter(r => r.event_text == 'Removed.').length == 2 && ledger.some(r => r.json.cycles == 100) && ledger.some(r => r.json.cycles == 200))
 	ok(ledger.every(r => r.hash_text == '' && !('hash' in r.json)))
 })
 grid(async () => {//password: sign-in verifies a name and a hash, and every miss leaves a row with the name tried and why, so credential stuffing shows
@@ -249,12 +251,15 @@ grid(async () => {//totp: set, re-enroll, verify single active, remove
 	ok((await credentialTotpGet({userTag})).secret == '')//no totp yet
 	await credentialTotpSet({userTag, secret: 'SECRETAAAAAAAAA1'})//enroll
 	ok((await credentialTotpGet({userTag})).secret == 'SECRETAAAAAAAAA1')//verify enrolled
+	let first = (await credentialRows({user_tag: userTag, type_text: 'Totp.'}))[0]//her one row
 	await credentialTotpSet({userTag, secret: 'SECRETBBBBBBBBB2'})//re-enroll (new phone)
 	ok((await credentialTotpGet({userTag})).secret == 'SECRETBBBBBBBBB2')//verify new secret
-	let rows = await credentialRows({user_tag: userTag, type_text: 'Totp.', event_text: 'Proven.'})
-	ok(rows.length == 1)//only one active totp after re-enroll
+	let rows = await credentialRows({user_tag: userTag, type_text: 'Totp.'})
+	ok(rows.length == 1 && rows[0].row_tag == first.row_tag)//the same row, edited in place, rather than a second one
+	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 1)//and no hidden one behind it
 	await credentialTotpRemove({userTag})
 	ok((await credentialTotpGet({userTag})).secret == '')//now gone
+	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 0)//deleted, not hidden
 
 	let ledger = await _ledger(userTag, 'Totp.')//two enrollments and the remove, and no secret in any of them
 	ok(ledger.length == 3 && ledger.filter(r => r.event_text == 'Proven.').length == 2 && ledger.filter(r => r.event_text == 'Removed.').length == 1)
@@ -265,7 +270,7 @@ grid(async () => {//totp verify: a right code proves the app again, a wrong one 
 	await clear('credential_table')
 	let userTag = Tag()
 	await credentialTotpEnroll1({userTag})
-	let secret = (await _totpStarts(userTag))[0].json.secret//a fresh secret, so the trail's count of wrong guesses starts at zero for this test
+	let secret = (await _totpChallengeRows(userTag))[0].json.secret//a fresh secret, so the trail's count of wrong guesses starts at zero for this test
 	let code = await totpGenerate({secret: Data({base32: secret}), now: Now()})
 	ok((await credentialTotpEnroll2({userTag, code})).ok)
 
@@ -281,7 +286,7 @@ grid(async () => {//totp verify: a right code proves the app again, a wrong one 
 	let tossed = false; try { await credentialTotpVerify({userTag: Tag(), code}) } catch (e) { tossed = true }
 	ok(tossed)//a user who isn't enrolled can't be here; the page ghosts the control
 })
-async function _totpStarts(userTag) {//a user's visible starts, newest first, at most one; the enroll tests read the secret from the row the way her authenticator app holds it from the qr code
+async function _totpChallengeRows(userTag) {//a user's Challenged. rows, her enrollment in flight, newest first, at most one; the enroll tests read the secret from the row the way her authenticator app holds it from the qr code
 	return await credentialRows({user_tag: userTag, type_text: 'Totp.', event_text: 'Challenged.'})
 }
 grid(async () => {//totp enroll: the whole flow, secret to saved enrollment, with a code the secret really makes
@@ -291,9 +296,9 @@ grid(async () => {//totp enroll: the whole flow, secret to saved enrollment, wit
 
 	let enrollment = await credentialTotpEnroll1({userTag})//step 1: she asks to enroll and gets a secret to scan
 	ok(hasText(enrollment.uri))
-	let starts = await _totpStarts(userTag)
-	ok(starts.length == 1 && starts[0].hash_text == '')//the start is a challenged row of hers, bound to no browser
-	let secret = starts[0].json.secret//the secret rides in the row, which only the server reads
+	let rows = await _totpChallengeRows(userTag)
+	ok(rows.length == 1 && rows[0].hash_text == '')//the start is a challenged row of hers, bound to no browser
+	let secret = rows[0].json.secret//the secret rides in the row, which only the server reads
 	ok(hasText(secret))
 	let snapshot = await credentialTotpGet({userTag})
 	ok(snapshot.secret == '' && snapshot.enrollment.uri == enrollment.uri)//nothing proven yet, and the snapshot rebuilds the same qr code from the row, so a refresh shows what she already scanned
@@ -302,43 +307,49 @@ grid(async () => {//totp enroll: the whole flow, secret to saved enrollment, wit
 	ok((await credentialTotpEnroll2({userTag, code})).ok)
 	snapshot = await credentialTotpGet({userTag})
 	ok(snapshot.secret == secret && snapshot.enrollment == false)//step 2 checked the code and saved the enrollment, and nothing is in flight
-	ok((await _totpStarts(userTag)).length == 0)//the finished start left the visible table
-	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 2)//and stays in it, hidden, beside the proven row
+	ok((await _totpChallengeRows(userTag)).length == 0)//no start is in flight
+	let enrolled = await credentialRows({user_tag: userTag, type_text: 'Totp.'})
+	ok(enrolled.length == 1 && enrolled[0].row_tag == rows[0].row_tag && enrolled[0].event_text == 'Proven.')//because the start became the enrollment: the same row, edited to Proven.
+	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 1)//one row, hidden or not
 
 	let ledger = await _ledger(userTag, 'Totp.')//the start and the enrollment; the secret rides the credential row and never the ledger
 	ok(ledger.length == 2 && ledger.some(r => r.event_text == 'Challenged.') && ledger.some(r => r.event_text == 'Proven.') && ledger.every(r => !('secret' in r.json)))
 })
-grid(async () => {//totp enroll: cancel hides the start, a wrong code is refused, a restart leaves one visible start, and enrolling twice is a mistake by the page above us
+grid(async () => {//totp enroll: cancel deletes the start, a wrong code is refused, a restart leaves one start, and enrolling twice is a mistake by the page above us
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
 
 	await credentialTotpEnroll1({userTag})//she starts,
-	let abandoned = (await _totpStarts(userTag))[0].json.secret
+	let abandoned = (await _totpChallengeRows(userTag))[0].json.secret
 	await credentialTotpEnroll1({userTag})//starts over without cancelling,
-	let starts = await _totpStarts(userTag)
-	ok(starts.length == 1 && starts[0].json.secret != abandoned)//and the restart hid the abandoned start--one enrollment in flight per user
+	let rows = await _totpChallengeRows(userTag)
+	ok(rows.length == 1 && rows[0].json.secret != abandoned)//and the restart deleted the abandoned start--one enrollment in flight per user
+	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 1)//deleted, not hidden
 	let stale = await totpGenerate({secret: Data({base32: abandoned}), now: Now()})
 	ok((await credentialTotpEnroll2({userTag, code: stale})).outcome == 'BadCode.')//a code from the first qr code checks against the secret that replaced it
 
 	await credentialTotpClear({userTag})//then backs out
-	ok((await _totpStarts(userTag)).length == 0)//the abandoned start is hidden
+	ok((await _totpChallengeRows(userTag)).length == 0)//the abandoned start is deleted
+	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 0)
 	ok((await credentialTotpGet({userTag})).enrollment == false)//and the snapshot offers nothing to resume
 	await credentialTotpClear({userTag})//a stale tab cancels what's already gone, harmlessly
-	ok((await _totpStarts(userTag)).length == 0)
+	ok((await _totpChallengeRows(userTag)).length == 0)
 
 	await credentialTotpEnroll1({userTag})//she starts again and gets a fresh secret
-	let secret = (await _totpStarts(userTag))[0].json.secret
+	let secret = (await _totpChallengeRows(userTag))[0].json.secret
 
 	let wrong = await credentialTotpEnroll2({userTag, code: '000000'})
 	ok(!wrong.ok && wrong.outcome == 'BadCode.')//six digits that aren't the six digits her app shows
 	ok((await credentialTotpGet({userTag})).secret == '')//and nothing saved
-	ok((await _totpStarts(userTag)).length == 1)//the start stands, so she can try again with the code in front of her
+	ok((await _totpChallengeRows(userTag)).length == 1)//the start stands, so she can try again with the code in front of her
 
 	let code = await totpGenerate({secret: Data({base32: secret}), now: Now()})
 	ok((await credentialTotpEnroll2({userTag, code})).ok)
+	await credentialTotpClear({userTag})//a stale tab cancels after she already finished
+	ok((await credentialTotpGet({userTag})).secret == secret)//and the enrollment stands, since clear deletes starts only
 
-	ok((await _ledger(userTag, 'Totp.', 'Cancelled.')).length == 2)//both cancels, the stale tab's too, since each records what was asked
+	ok((await _ledger(userTag, 'Totp.', 'Cancelled.')).length == 3)//every cancel, the stale tabs' too, since each records what was asked
 	ok((await _ledger(userTag, 'Totp.', 'Refused.')).length == 0)//a wrong first code during enrollment writes nothing: nobody else is involved
 	ok((await _ledger(userTag, 'Totp.', 'Challenged.')).length == 3)//three starts
 
@@ -354,42 +365,41 @@ grid(async () => {//totp enroll: a start belongs to the user who made it, not to
 	await clear('credential_table')
 	let alice = Tag(), bob = Tag()
 	await credentialTotpEnroll1({userTag: alice})//alice starts at the kitchen computer and steps away
-	let secret = (await _totpStarts(alice))[0].json.secret
+	let secret = (await _totpChallengeRows(alice))[0].json.secret
 	let code = await totpGenerate({secret: Data({base32: secret}), now: Now()})
 
 	let his = await credentialTotpEnroll2({userTag: bob, code})//bob, signed in at the browser alice left, tries to finish her enrollment as his own
 	ok(!his.ok && his.outcome == 'Expired.')//no start of his, so the graceful answer: nothing in flight, start over
 	let bobs = await credentialTotpGet({userTag: bob})
 	ok(bobs.secret == '' && bobs.enrollment == false)//nothing written for him, and his snapshot shows an ordinary panel, not her qr code
-	ok((await _totpStarts(alice)).length == 1)//and her start rides on, untouched
+	ok((await _totpChallengeRows(alice)).length == 1)//and her start rides on, untouched
 
 	ok(hasText((await credentialTotpGet({userTag: alice})).enrollment.uri))//alice, signed in at her phone, sees the same qr code there
 	ok((await credentialTotpEnroll2({userTag: alice, code})).ok)//and finishes there, with the code from the kitchen computer's screen; nothing ties a start to a browser
 	ok((await credentialTotpGet({userTag: alice})).secret == secret)
 })
-grid(async () => {//totp enroll: finishing hides the start, so a removed enrollment can't come back as a qr code; and a start left past twenty minutes resumes for nobody
+grid(async () => {//totp enroll: finishing turns the start into the enrollment, so a removed enrollment can't come back as a qr code; and a start left past twenty minutes resumes for nobody
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
 
 	await credentialTotpEnroll1({userTag})
-	let secret = (await _totpStarts(userTag))[0].json.secret
+	let secret = (await _totpChallengeRows(userTag))[0].json.secret
 	let code = await totpGenerate({secret: Data({base32: secret}), now: Now()})
 	ok((await credentialTotpEnroll2({userTag, code})).ok)//she enrolls
 	await credentialTotpRemove({userTag})//and minutes later removes the enrollment, well inside the start's twenty minutes
 	let snapshot = await credentialTotpGet({userTag})
-	ok(snapshot.secret == '' && snapshot.enrollment == false)//not enrolled, and not offered the qr code of the enrollment she just discarded, because enroll2 hid the start when it finished
-	ok((await credentialRows({user_tag: userTag, type_text: 'Totp.'})).length == 0)//nothing visible
-	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 2)//and both rows are still in the table as evidence, hidden
+	ok(snapshot.secret == '' && snapshot.enrollment == false)//not enrolled, and not offered the qr code of the enrollment she just discarded, because the start became the enrollment and remove deleted it
+	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 0)//nothing left in the table; the ledger is the evidence
 
 	await credentialTotpEnroll1({userTag})//she starts once more, and this time walks away
-	secret = (await _totpStarts(userTag))[0].json.secret
+	secret = (await _totpChallengeRows(userTag))[0].json.secret
 	code = await totpGenerate({secret: Data({base32: secret}), now: Now()})
 	ageNow(Limit.expirationUser + Time.minute)//and comes back tomorrow
 	let late = await credentialTotpEnroll2({userTag, code})
 	ok(!late.ok && late.outcome == 'Expired.')//answered gracefully, so the page can start her over
 	ok((await credentialTotpGet({userTag})).enrollment == false)//and her snapshot no longer offers the stale qr code
-	ok((await _totpStarts(userTag)).length == 1)//the stale start is still visible in the table; nothing sweeps it, and nothing honors it
+	ok((await _totpChallengeRows(userTag)).length == 1)//the stale start is still visible in the table; nothing sweeps it, and nothing honors it
 })
 grid(async () => {//wallet: a user proves two addresses, and the third is refused until they remove one
 	let {clear} = await getDatabase()
@@ -868,6 +878,8 @@ grid(async () => {//name: remove frees name for another user
 	await credentialNameRemove({userTag: user1})//user1 removes
 	ok((await credentialNameGet({userTag: user1})) == false)//user1 has no name
 	ok(await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: user1}) == 0)//deleted, not hidden
+	await credentialNameRemove({userTag: user1})//a stale tab removes again: nothing to delete, and harmless
+	ok((await _ledger(user1, 'Name.', 'Removed.')).length == 2)//both removes on the record, since each records what was asked
 	let v = await credentialNameSet({userTag: user2, raw1: 'taken', raw2: 'Taken'})//user2 can take it
 	ok(v.ok && v.f0 == 'taken')
 })
