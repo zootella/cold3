@@ -792,24 +792,48 @@ export function credentialOauthParse(provider, proof) {//back from provider's oa
 /*
 oauth: a user can link any number of oauth accounts but only have one account for each provider
 all oauth rows share type Oauth. the provider like Discord. or Google. rides in the note
+one Proven. row per provider linked and one Challenged. row per provider in flight, the challenge edited into the proof when the
+provider answers and deleted when the callback refuses or the user cancels; a start from a browser nobody is signed in at is a
+ledger row only, and a callback with no live start of the signed-in user's is refused
 */
-export async function credentialOauthChallenge({userTag, provider}) {//record we're sending the user into a third party oauth flow
-	checkTag(userTag); checkAction(provider)
-	await credentialSet({userTag, type: 'Oauth.', event: 'Challenged.', json: {provider}})//the challenge, so we can see how long users take or if for whatever reason they don't make it through in significant numbers
-	await ledgerAdd({action: 'Oauth.', event: 'Challenged.', provider, userTag})
+//record we're sending the person at this browser into a third party oauth flow; userTag is blank when nobody is signed in, and then only the ledger records the start
+export async function credentialOauthChallenge({userTag = '', provider}) {
+	checkTagOrBlank(userTag); checkAction(provider)
+	if (userTag) {
+		await queryDelete('credential_table', {user_tag: userTag, type_text: 'Oauth.', event_text: 'Challenged.', json: {provider}})//one challenge per provider in flight: starting again replaces the earlier one
+		await credentialSet({userTag, type: 'Oauth.', event: 'Challenged.', json: {provider}})//the flow in flight, which the callback edits into the proof
+	}
+	await ledgerAdd({action: 'Oauth.', event: 'Challenged.', provider, userTag})//every start, signed in or not, so a proof always has a start behind it and a signed-out start is itself on the record
+}
+
+//the flow ended at the provider without a proof: the user cancelled, or the provider or @auth/core refused; delete the challenge and record what came back
+//userTag and provider are blank when the handler doesn't know them, a flow that broke before naming a provider or a browser nobody is signed in at, and then only the ledger row is written
+export async function credentialOauthCancel({userTag = '', provider = '', json = {}}) {
+	checkTagOrBlank(userTag); checkActionOrBlank(provider); checkPlain(json)
+	if (userTag && provider) await queryDelete('credential_table', {user_tag: userTag, type_text: 'Oauth.', event_text: 'Challenged.', json: {provider}})//the flow is over; a proof already standing is a Proven. row and stays
+	await ledgerAdd({action: 'Oauth.', event: 'Cancelled.', provider, userTag, json})
 }
 
 /*
 record proof a user controls a third party oauth account, with information about it
-returns {ok: true} on insert, or {ok: false, outcome: '...'} on collision; outcome is 'OauthAlreadyLinked.' (this user has another account for this provider) or 'OauthClaimedElsewhere.' (the providerId is held by a different cold3 account)
-writes the Oauth. ledger row beside the credential row, Proven. after the insert or Refused. with the outcome, carrying the same facts about the link and the whole proof, so the ledger tells the story of the link on its own
+returns {ok: true} once the challenge this user started for this provider has become the proof, or {ok: false, outcome}: 'Expired.' when she has no live start, so a proof can only land on the account that set off, 'OauthAlreadyLinked.' (this user has another account for this provider), or 'OauthClaimedElsewhere.' (the providerId is held by a different cold3 account)
+writes the Oauth. ledger row beside the credential row, Proven. after the edit or Refused. with the outcome, carrying the same facts about the link and the whole proof, so the ledger tells the story of the link on its own
 ui will let user change their account with a provider by removing an old one and then adding a new one
 caller is expected to have run credentialOauthParse on the proof and pass the resulting fields here; this function is dumb storage and does no provider-specific parsing of its own
 */
 export async function credentialOauthSet({userTag, provider, proof, identifier, handle, name, email}) {
 	checkTag(userTag); checkAction(provider); checkText(identifier)
 	let json = {identifier, handle: handle ?? undefined, name: name ?? undefined, email: email ? {f0: email.f0, f1: email.f1, f2: email.f2} : undefined, proof}//what the ledger row carries: the facts the credential row keeps, the email when the provider gave one, and the whole proof; ?? undefined turns a null into an absent key
-	let refuse = async (outcome) => { await ledgerAdd({action: 'Oauth.', event: 'Refused.', provider, userTag, json: {...json, outcome}}); return {ok: false, outcome} }//a refusal touches no table, writes its ledger row, and answers the caller
+	let refuse = async (outcome) => {//a refusal ends the flow: the challenge goes, the ledger row says why, and the caller hears the outcome
+		await queryDelete('credential_table', {user_tag: userTag, type_text: 'Oauth.', event_text: 'Challenged.', json: {provider}})
+		await ledgerAdd({action: 'Oauth.', event: 'Refused.', provider, userTag, json: {...json, outcome}})
+		return {ok: false, outcome}
+	}
+
+	//the start this callback finishes: this user's live challenge for this provider, so a proof can only land on the account that set off
+	//the state cookie binds the flow to the browser; this binds it to the person, which is what stops a stranger's start at a shared computer from linking their account to hers
+	let challenge = (await credentialRows({user_tag: userTag, type_text: 'Oauth.', event_text: 'Challenged.', json: {provider}}))[0]
+	if (!challenge || Now() >= challenge.row_tick + Limit.expirationUser) return await refuse('Expired.')//no live start of hers: someone else set off at this browser, or she signed in mid-flow, or it was days ago; every way, start over
 
 	//check 1: this user already has SOME account linked for this provider
 	let mine = await credentialRows({user_tag: userTag, type_text: 'Oauth.', json: {provider}, event_text: 'Proven.'})
@@ -827,23 +851,19 @@ export async function credentialOauthSet({userTag, provider, proof, identifier, 
 	- (done) also watch out for and block duplicates related to the provider's id, like what if another user here has already proven this provider's third party account, with the providerId, probably the same person, but who knows? figure out what to do there
 	*/
 
-	await credentialSet({
-		userTag, type: 'Oauth.', event: 'Proven.',
-		f0: email?.f0, f1: email?.f1, f2: email?.f2,//store email from provider here
-		json: {
-			provider,//provider name like 'Discord.'
-			identifier,//user's account number with that provider; user doesn't know it, stays the same through handle edits
-			handle: handle ?? undefined,//provider's @-style handle (or gmail address as stand-in for Google); discord and github hand over null when the user never set one, and ?? undefined turns that into an absent key, the blank of a property
-			name: name ?? undefined,//provider's display name, separate from handle so both are readable; panel's fallback chain handles the "show whichever we have" case
-			proof,//auth.js/provider slice (drops our envelope wrapper) as real nested json, inner nulls verbatim, for audit and future re-parsing
-		},
-	})
+	//what the credential row keeps: the provider's email in the triad, or blanks, and in json the provider name like 'Discord.', the identifier, the user's account number there that stays the same through handle edits,
+	//the @-style handle or gmail address standing in for Google, the display name separate from the handle so both are readable, and the auth.js slice of the proof as real nested json, inner nulls verbatim, for audit and re-parsing
+	//discord and github hand over null for a handle or name the user never set, and ?? undefined turns that into an absent key, the blank of a property
+	let address = email ? {f0: email.f0, f1: email.f1, f2: email.f2} : {f0: '', f1: '', f2: ''}
+	let held = {provider, identifier, handle: handle ?? undefined, name: name ?? undefined, proof}
+	let rows = await queryUpdate('credential_table', {where: {hide: 0, row_tag: challenge.row_tag}, set: {event_text: 'Proven.', f0_text: address.f0, f1_text: address.f1, f2_text: address.f2, json: held}})//the challenge becomes the proof, found by its own tag; hide: 0 keeps an old hidden row out of it while credential_table still has the column
+	if (!rows.length) return await refuse('Expired.')//gone between the read and the edit: another tab finished or cancelled first
 	await ledgerAdd({action: 'Oauth.', event: 'Proven.', provider, userTag, json})//the ledger row after the credential row, from the same values
 	return {ok: true}
 }
 export async function credentialOauthRemove({userTag, provider}) {
 	checkTag(userTag); checkAction(provider)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Oauth.', json: {provider}, event_text: 'Proven.'})
+	await queryDelete('credential_table', {user_tag: userTag, type_text: 'Oauth.', json: {provider}})//every Oauth. row of hers with this provider, the proof and any challenge in flight: absence is the answer
 	await ledgerAdd({action: 'Oauth.', event: 'Removed.', provider, userTag})
 }
 export async function credentialOauthGet({userTag}) {//list this user's linked oauth credentials across providers we currently support

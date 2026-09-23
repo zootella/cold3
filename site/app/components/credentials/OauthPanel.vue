@@ -22,6 +22,7 @@ const route = useRoute()
 const oauthDoneCopy = {//known outcome keys → fixed copy; an unknown key renders nothing
 	Cancelled: `That sign-in didn't finish — you can try again. If a provider window surprised you, you may be signed in there as someone else, or using a different browser.`,
 	ClaimedElsewhere: `That account is already connected to a cold3 account. If that was you, sign in with the cold3 account you used before.`,
+	Expired: `That sign-in couldn't be matched to a start from this account, maybe because it began before you signed in, or too long ago. Try again from here.`,
 }
 const refOauthDone = ref(oauthDoneCopy[route.query['oauth-done']] || '')//captured once at setup so it survives the url strip below
 onMounted(() => {//drop the hint from the url so reload/back/share don't replay it; the copy is already held in refOauthDone

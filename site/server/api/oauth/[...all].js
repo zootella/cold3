@@ -19,9 +19,9 @@ import discordProvider from '@auth/core/providers/discord'
 //import redditProvider  from '@auth/core/providers/reddit'//twitch and reddit, ready to go: uncomment these and add them to the providers list below once we have their keys — commented for now so the bundler doesn't warn about unused imports
 import {toWebRequest} from 'h3'//converts the nitro event to a web Request; h3 also auto-sends a returned web Response, so the handler is just: return Auth(toWebRequest(workerEvent), authOptions)
 import {
-makePlain, originApex, toTextOrBlank,
-credentialBrowserGet, credentialOauthChallenge, credentialOauthParse, credentialOauthSet,
-ledgerAdd, oauthProviders,
+makePlain, originApex,
+credentialBrowserGet, credentialOauthChallenge, credentialOauthCancel, credentialOauthParse, credentialOauthSet,
+oauthProviders,
 doorWorkerLite,
 } from 'icarus'
 
@@ -66,6 +66,7 @@ async function doorHandleBelow({door, workerEvent, browserHash}) {//the flow its
 
 				//on success the panel shows the freshly-linked row on its next Get, so it needs no message. on a collision we wrote nothing: OauthClaimedElsewhere. owes the user an explanation — they proved control, but another cold3 user already holds this provider identity — so hand back a one-shot ?oauth-done hint the panel reads and strips. OauthAlreadyLinked. is the rare same-account re-prove (a stale tab) and stays silent; the panel just shows it linked
 				if (result.outcome == 'OauthClaimedElsewhere.') return '/page1?oauth-done=ClaimedElsewhere'
+				if (result.outcome == 'Expired.') return '/page1?oauth-done=Expired'//no live start of this user's for this provider: a flow begun before they signed in, or by someone else at this browser, or too long ago
 				return '/page1'//send the browser back to the credential panel; ttd november2025, will change to welcome, home, or dashboard depending on the user's aim proving oauth
 			},
 			//signIn returns a same-origin path, so Auth.js's default redirect handling is enough — no redirect() callback needed
@@ -78,13 +79,11 @@ async function doorHandleBelow({door, workerEvent, browserHash}) {//the flow its
 		logger: {error(e) { authError = e }},//capture the real error @auth/core caught before it normalizes to a ?error= type; setLogger only overrides the level we pass, so warn/debug keep their defaults
 	}
 
-	//when a flow starts (the signin action) record a Challenged. row that we're sending this user into the provider — the funnel "started" marker, paired with the "oauth done" completion logged in signIn above
+	//when a flow starts, the signin action, record the start: a challenge row for the signed-in user, which the callback edits into the proof, and a ledger row for every start, signed in or not
 	let [authAction, authProviderName] = (workerEvent.path.split('?')[0].split('/api/oauth/')[1] || '').split('/')//the action and provider Auth.js routes on, e.g. signin / discord
-	if (authAction == 'signin') {
-		let signedIn = await credentialBrowserGet({browserHash})
-		let providerInfo = oauthProviders().find(p => p.name == authProviderName)
-		if (signedIn && providerInfo) await credentialOauthChallenge({userTag: signedIn.userTag, provider: providerInfo.tag})
-	}
+	let signedIn = await credentialBrowserGet({browserHash})//who is signed in at this browser, if anyone; the start's challenge row and the cancel's delete both belong to a user
+	let providerInfo = oauthProviders().find(p => p.name == authProviderName)//the provider the path names, when it names one we have
+	if (authAction == 'signin' && providerInfo) await credentialOauthChallenge({userTag: signedIn ? signedIn.userTag : '', provider: providerInfo.tag})
 
 	let response = await Auth(toWebRequest(workerEvent), authOptions)//run the flow
 
@@ -95,7 +94,7 @@ async function doorHandleBelow({door, workerEvent, browserHash}) {//the flow its
 		toss('oauth', {errorType, path: workerEvent.path, error: authError})
 	} else if (errorType) {//a provider changing things on us (loves us monday, hates us tuesday), or a user cancelling at the provider — not ours to fix
 		logAudit('oauth sad path', {errorType, path: workerEvent.path, error: authError})//don't crash the site; record the provider interaction for the team to analyse — and the underlying error disambiguates the shared OAuthCallbackError type (a user declining vs our own misconfig, like a wrong secret or unregistered redirect uri)
-		await ledgerAdd({action: 'Oauth.', event: 'Cancelled.', provider: toTextOrBlank(oauthProviders().find(p => p.name == authProviderName)?.tag), browserHash, json: makePlain({errorType, path: workerEvent.path, error: authError})})//the provider is blank when the flow broke before the path named one
+		await credentialOauthCancel({userTag: signedIn ? signedIn.userTag : '', provider: providerInfo ? providerInfo.tag : '', json: makePlain({errorType, path: workerEvent.path, error: authError})})//deletes the user's challenge for the provider when the handler knows both, and records what came back either way; the provider is blank when the flow broke before the path named one
 		//the attempt didn't complete — most often the user cancelled at the provider, sometimes startled the provider window even appeared. rather than drop them on a bare /page1 with no idea what happened, hand back a one-shot ?oauth-done hint the panel reads and strips, nudging them to try again
 		return new Response(null, {status: 303, headers: {location: '/page1?oauth-done=Cancelled'}})
 	}

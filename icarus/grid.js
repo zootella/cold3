@@ -28,7 +28,7 @@ credentialTotpGet, credentialTotpSet, credentialTotpRemove, credentialTotpClear,
 credentialTotpEnroll1, credentialTotpEnroll2,
 credentialWalletGet, credentialWalletSet, credentialWalletRemove, credentialWalletHolder, credentialWalletRefusal,
 credentialWalletProve1, credentialWalletProve2, validateWallet,
-credentialOauthGet, credentialOauthSet, credentialOauthRemove, credentialOauthChallenge,
+credentialOauthGet, credentialOauthSet, credentialOauthRemove, credentialOauthChallenge, credentialOauthCancel,
 credentialOtpGet, credentialOtpSend, credentialOtpEnter, credentialOtpRemove, credentialOtpHolder,
 credentialOtpMentioned, credentialOtpChallenged, credentialOtpProven,
 credentialCloseAccount,
@@ -40,6 +40,10 @@ function grid(f) { _grid.push(f) }
 
 //the otp tests read each code from the inbox the simulation database carries, which send fills in place of handing the message to the lambda, the way a person reads the code from their email or texts
 async function _otpCode(f0) { return (await getDatabase()).inbox.findLast(m => m.f0 == f0) }//the newest message to an address: {type, f0, tag, answer}
+async function _oauthLink(o) {//the whole link as the site runs it: the start, which writes the challenge, then the callback, which edits it into the proof; o is what credentialOauthSet takes
+	await credentialOauthChallenge({userTag: o.userTag, provider: o.provider})
+	return await credentialOauthSet(o)
+}
 async function _ledger(userTag, action, event) {//a user's ledger rows of one action, and one event when given, newest first; how a flow test reads what a flow wrote beside its credential rows
 	let cells = {user_tag_text: userTag, action_text: action}; if (event) cells.event_text = event
 	return await queryGet('ledger_table', cells)
@@ -636,6 +640,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	await credentialOauthChallenge({userTag, provider: 'Discord.'})
 	let challenged = await credentialRows({user_tag: userTag, type_text: 'Oauth.', event_text: 'Challenged.', json: {provider: 'Discord.'}})
 	ok(challenged.length == 1)
+	let started = challenged[0].row_tag//the row the callback will edit into the proof
 	ok((await _ledger(userTag, 'Oauth.', 'Challenged.'))[0].provider_text == 'Discord.')//and its ledger row beside it, the provider in its own column
 
 	//link Discord; verify row fields via get+find
@@ -645,6 +650,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	let got = (await credentialOauthGet({userTag})).find(o => o.provider == 'Discord.')
 	ok(got.identifier == 'd123' && got.handle == 'alice_d' && got.email == 'alice@example.com')
 	let discordRow = (await credentialRows({user_tag: userTag, type_text: 'Oauth.', json: {provider: 'Discord.'}, event_text: 'Proven.'}))[0]
+	ok(discordRow.row_tag == started && (await credentialRows({user_tag: userTag, type_text: 'Oauth.', event_text: 'Challenged.'})).length == 0)//the proof is the challenge's own row, edited, and nothing is left in flight
 	ok(discordRow.f0_text == 'alice@example.com' && discordRow.f2_text == 'alice@example.com')//validated email filled into f0/1/2
 	ok(discordRow.json.proof.account.a == 1)//the note preserves the auth.js slice as real nested json
 	let ledger = await _ledger(userTag, 'Oauth.', 'Proven.')//the ledger row beside the credential row, from the same values
@@ -652,11 +658,11 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	ok(ledger[0].json.identifier == 'd123' && ledger[0].json.handle == 'alice_d' && ledger[0].json.email.f2 == 'alice@example.com' && ledger[0].json.proof.account.a == 1)//the link's facts and the whole proof, so the ledger tells the story once the credential row is gone
 
 	//link Google too; get returns both
-	await credentialOauthSet({userTag, provider: 'Google.', identifier: 'g456', handle: 'alice@gmail.com', name: 'Alice G.', email: aliceEmailObj})
+	await _oauthLink({userTag, provider: 'Google.', identifier: 'g456', handle: 'alice@gmail.com', name: 'Alice G.', email: aliceEmailObj})
 	ok((await credentialOauthGet({userTag})).length == 2)
 
 	//re-link attempt while Discord is still linked: Set blocks with OauthAlreadyLinked., original row preserved
-	ok((await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd789', handle: 'alice_new', email: aliceEmailObj})).outcome == 'OauthAlreadyLinked.')
+	ok((await _oauthLink({userTag, provider: 'Discord.', identifier: 'd789', handle: 'alice_new', email: aliceEmailObj})).outcome == 'OauthAlreadyLinked.')
 	let stillOriginal = (await credentialOauthGet({userTag})).find(o => o.provider == 'Discord.')
 	ok(stillOriginal.identifier == 'd123' && stillOriginal.handle == 'alice_d')//unchanged — not overwritten by the blocked Set
 	let refused = await queryGet('ledger_table', {user_tag_text: userTag, action_text: 'Oauth.', event_text: 'Refused.'})//the refusal touched no table and left its row, with what was tried
@@ -664,7 +670,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 
 	//to switch accounts the user must Remove first, then Set succeeds and points at the new account
 	await credentialOauthRemove({userTag, provider: 'Discord.'})
-	ok((await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd789', handle: 'alice_new', email: aliceEmailObj})).ok)//wrote now that the slot is free
+	ok((await _oauthLink({userTag, provider: 'Discord.', identifier: 'd789', handle: 'alice_new', email: aliceEmailObj})).ok)//wrote now that the slot is free
 	let rows = await credentialRows({user_tag: userTag, type_text: 'Oauth.', json: {provider: 'Discord.'}, event_text: 'Proven.'})
 	ok(rows.length == 1)//only one active Discord row
 	ok((await credentialOauthGet({userTag})).find(o => o.provider == 'Discord.').identifier == 'd789')//new account wins
@@ -673,16 +679,56 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	await credentialOauthRemove({userTag, provider: 'Discord.'})
 	let afterRemove = await credentialOauthGet({userTag})
 	ok(afterRemove.length == 1 && afterRemove.find(o => o.provider == 'Discord.') === undefined)
+	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 1)//google's row alone, hidden or not: the discord rows are gone
 
 	//whitelist filter: Twitch. isn't in oauthProviders(), so even if a row exists it's not returned by get
-	await credentialOauthSet({userTag, provider: 'Twitch.', identifier: 't999', handle: 'alice_t'})
+	await _oauthLink({userTag, provider: 'Twitch.', identifier: 't999', handle: 'alice_t'})
 	ok((await credentialOauthGet({userTag})).length == 1)//still just Google — Twitch filtered out
 
 	//Set with no email: f0/1/2 stay blank
 	let userTag2 = Tag()
-	await credentialOauthSet({userTag: userTag2, provider: 'Discord.', identifier: 'd2', handle: 'bob'})
+	await _oauthLink({userTag: userTag2, provider: 'Discord.', identifier: 'd2', handle: 'bob'})
 	let bobRow = (await credentialRows({user_tag: userTag2, type_text: 'Oauth.', json: {provider: 'Discord.'}, event_text: 'Proven.'}))[0]
 	ok(bobRow.f0_text == '' && bobRow.f1_text == '' && bobRow.f2_text == '')//no email passed → f columns blank
+})
+grid(async () => {//oauth flow: one challenge per provider, the proof is the challenge's row, a refusal and a cancel delete it, a cancel after the proof leaves it standing, a signed-out start is a ledger row only, a callback with no start of hers is refused, and a stale start is no start
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag()
+	let count = async () => await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})//every row of hers, hidden or not
+	let challenges = async () => await credentialRows({user_tag: userTag, type_text: 'Oauth.', event_text: 'Challenged.'})
+
+	await credentialOauthChallenge({userTag, provider: 'Discord.'})//she sets off
+	await credentialOauthChallenge({userTag, provider: 'Discord.'})//and sets off again from another tab
+	ok((await challenges()).length == 1 && (await count()) == 1)//one challenge per provider in flight
+	await credentialOauthCancel({userTag, provider: 'Discord.', json: {errorType: 'OAuthCallbackError'}})//she cancels at the provider
+	ok((await count()) == 0)//the challenge is gone
+	ok((await _ledger(userTag, 'Oauth.', 'Challenged.')).length == 2 && (await _ledger(userTag, 'Oauth.', 'Cancelled.')).length == 1)//both starts and the cancel on the record
+
+	await credentialOauthChallenge({userTag, provider: 'Discord.'})//she sets off again
+	let started = (await challenges())[0].row_tag
+	ok((await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd1', handle: 'alice'})).ok)//and the provider answers
+	let proof = (await credentialRows({user_tag: userTag, type_text: 'Oauth.', event_text: 'Proven.'}))[0]
+	ok(proof.row_tag == started && proof.json.identifier == 'd1' && (await count()) == 1)//the proof is the challenge's own row, edited
+	await credentialOauthCancel({userTag, provider: 'Discord.', json: {}})//a cancel from a stale tab after the proof landed
+	ok((await credentialOauthGet({userTag})).length == 1 && (await count()) == 1)//deletes nothing: the proof stands
+
+	await credentialOauthChallenge({userTag, provider: 'Discord.'})//she sets off once more, though she is already linked
+	ok((await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd2', handle: 'alice2'})).outcome == 'OauthAlreadyLinked.')//refused at the callback
+	ok((await count()) == 1 && (await challenges()).length == 0)//and the refusal deleted the challenge; the proof stands
+
+	await credentialOauthChallenge({provider: 'Twitter.'})//a start from a browser nobody is signed in at
+	ok((await queryGet('ledger_table', {action_text: 'Oauth.', event_text: 'Challenged.', provider_text: 'Twitter.'})).length == 1)//a ledger row only, with no user, so the start is on the record
+	let hijack = await credentialOauthSet({userTag, provider: 'Twitter.', identifier: 't1', handle: 'stranger'})//she signs in at that browser, and the provider answers a flow she never started
+	ok(!hijack.ok && hijack.outcome == 'Expired.' && (await credentialOauthGet({userTag})).length == 1)//refused: a proof lands only on the account that set off, so a stranger's start at a shared computer can't link their account to hers
+	ok((await _ledger(userTag, 'Oauth.', 'Refused.')).some(r => r.json.outcome == 'Expired.' && r.json.identifier == 't1'))//and the try is on the record, with the account that tried
+	await credentialOauthCancel({provider: 'Twitter.', json: {errorType: 'AccessDenied'}})//a callback denied outright, since nobody was signed in
+	ok((await queryGet('ledger_table', {action_text: 'Oauth.', event_text: 'Cancelled.', provider_text: 'Twitter.'})).length == 1)
+
+	await credentialOauthChallenge({userTag, provider: 'Google.'})//she sets off and walks away
+	ageNow(Limit.expirationUser + Time.minute)//and the provider answers the next day
+	ok((await credentialOauthSet({userTag, provider: 'Google.', identifier: 'g1', handle: 'alice'})).outcome == 'Expired.')//a start from too long ago is no start, the same twenty minutes every challenge lives
+	ok((await challenges()).length == 0)//and the stale start went with the refusal
 })
 grid(async () => {//oauth: cross-user providerId uniqueness — one provider identity, one cold3 account; released claim is reclaimable
 	let {clear} = await getDatabase()
@@ -690,37 +736,37 @@ grid(async () => {//oauth: cross-user providerId uniqueness — one provider ide
 	let aliceTag = Tag(), bobTag = Tag()
 
 	//alice claims Discord with shared_id
-	ok((await credentialOauthSet({userTag: aliceTag, provider: 'Discord.', identifier: 'shared_id', handle: 'alice'})).ok)
+	ok((await _oauthLink({userTag: aliceTag, provider: 'Discord.', identifier: 'shared_id', handle: 'alice'})).ok)
 	ok((await credentialOauthGet({userTag: aliceTag})).find(o => o.provider == 'Discord.').identifier == 'shared_id')
 
 	//bob tries to claim the same providerId: blocked with OauthClaimedElsewhere., alice's row preserved
-	let blocked = await credentialOauthSet({userTag: bobTag, provider: 'Discord.', identifier: 'shared_id', handle: 'bob_tries'})
+	let blocked = await _oauthLink({userTag: bobTag, provider: 'Discord.', identifier: 'shared_id', handle: 'bob_tries'})
 	ok(!blocked.ok && blocked.outcome == 'OauthClaimedElsewhere.')
 	ok((await credentialOauthGet({userTag: aliceTag})).find(o => o.provider == 'Discord.').handle == 'alice')//alice unchanged
 	ok((await credentialOauthGet({userTag: bobTag})).length == 0)//bob has nothing written
-	ok((await queryGet('ledger_table', {user_tag_text: bobTag, action_text: 'Oauth.'}))[0].json.outcome == 'OauthClaimedElsewhere.')//but his try is in the ledger, with the identifier alice holds; the third kind of record, an identity contested between users
+	ok((await _ledger(bobTag, 'Oauth.', 'Refused.'))[0].json.outcome == 'OauthClaimedElsewhere.')//but his try is in the ledger, with the identifier alice holds; the third kind of record, an identity contested between users
 
-	//alice releases the claim — her row gets hidden, so the providerId becomes available again
+	//alice releases the claim: her row is deleted, so the providerId becomes available again
 	await credentialOauthRemove({userTag: aliceTag, provider: 'Discord.'})
 
 	//bob can now claim the released providerId
-	ok((await credentialOauthSet({userTag: bobTag, provider: 'Discord.', identifier: 'shared_id', handle: 'bob_now'})).ok)
+	ok((await _oauthLink({userTag: bobTag, provider: 'Discord.', identifier: 'shared_id', handle: 'bob_now'})).ok)
 	ok((await credentialOauthGet({userTag: bobTag})).find(o => o.provider == 'Discord.').handle == 'bob_now')
 
 	//alice can't reclaim what bob now holds
-	let blocked2 = await credentialOauthSet({userTag: aliceTag, provider: 'Discord.', identifier: 'shared_id', handle: 'alice_again'})
+	let blocked2 = await _oauthLink({userTag: aliceTag, provider: 'Discord.', identifier: 'shared_id', handle: 'alice_again'})
 	ok(!blocked2.ok && blocked2.outcome == 'OauthClaimedElsewhere.')
 
 	//alice can claim Discord with a DIFFERENT providerId — uniqueness is per (provider, identifier), not per provider
-	ok((await credentialOauthSet({userTag: aliceTag, provider: 'Discord.', identifier: 'alice_own_id', handle: 'alice_other'})).ok)
+	ok((await _oauthLink({userTag: aliceTag, provider: 'Discord.', identifier: 'alice_own_id', handle: 'alice_other'})).ok)
 	ok((await credentialOauthGet({userTag: aliceTag})).find(o => o.provider == 'Discord.').identifier == 'alice_own_id')
 
 	ok((await _ledger(aliceTag, 'Oauth.', 'Removed.')).length == 1 && (await _ledger(aliceTag, 'Oauth.', 'Removed.'))[0].provider_text == 'Discord.')//her release is on the record
 
 	//cross-provider corner: two providers can hand out the same identifier string to two different cold3 users without colliding, because the uniqueness key is (provider, identifier) compound, not identifier alone
 	let charlieTag = Tag(), daveTag = Tag()
-	ok((await credentialOauthSet({userTag: charlieTag, provider: 'Google.', identifier: 'collision_id', handle: 'charlie_g'})).ok)
-	ok((await credentialOauthSet({userTag: daveTag, provider: 'Discord.', identifier: 'collision_id', handle: 'dave_d'})).ok)//same identifier string, different provider — both succeed
+	ok((await _oauthLink({userTag: charlieTag, provider: 'Google.', identifier: 'collision_id', handle: 'charlie_g'})).ok)
+	ok((await _oauthLink({userTag: daveTag, provider: 'Discord.', identifier: 'collision_id', handle: 'dave_d'})).ok)//same identifier string, different provider — both succeed
 	ok((await credentialOauthGet({userTag: charlieTag})).find(o => o.provider == 'Google.').identifier == 'collision_id')
 	ok((await credentialOauthGet({userTag: daveTag})).find(o => o.provider == 'Discord.').identifier == 'collision_id')
 })
@@ -812,7 +858,7 @@ grid(async () => {//oauth notes: the named account rides the note, and null from
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
-	await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd1', handle: 'alex_dev_42', name: null, proof: {account: {providerAccountId: 'd1'}, profile: {global_name: null}, user: {}}})//discord with no display name set hands over null
+	await _oauthLink({userTag, provider: 'Discord.', identifier: 'd1', handle: 'alex_dev_42', name: null, proof: {account: {providerAccountId: 'd1'}, profile: {global_name: null}, user: {}}})//discord with no display name set hands over null
 	let row = (await credentialRows({user_tag: userTag, type_text: 'Oauth.', event_text: 'Proven.'}))[0]
 	ok(row.json.provider == 'Discord.' && row.json.identifier == 'd1' && row.json.handle == 'alex_dev_42')
 	ok(row.event_text == 'Proven.')//as above
