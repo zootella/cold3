@@ -255,7 +255,6 @@ export async function credentialOtpSend({v, provider, userTag}) {
 	}
 
 	// 📬 Step 4 Sent: Record the challenge, in the trail and in credential_table
-	await queryHide('credential_table', {user_tag: userTag, type_text: o.address.type, f0_text: o.address.f0, event_text: 'Challenged.'})//a resend replaces her earlier live challenge to this address: hidden, its code is dead and the snapshot shows one enter box per address; scoped by owner, so a housemate's challenge to the same address rides on
 	await trailAddMany([
 		{message: safefill`OTP opened challenge: address ${o.address.f0}`},//record we bothered this address; the permit step counts these across every user who ever asked for a code here
 		{message: safefill`OTP answer: tag ${o.tag} answer ${o.answer}`},//the answer, as the hash of this message; enter hashes the guess into the same words and looks for a match
@@ -284,20 +283,19 @@ export async function credentialOtpEnter({tag, guess, userTag}) {
 	const answerHash = await hashText(safefill`OTP answer: tag ${tag} answer ${guess}`)//compute the same message hashes here to find and filter next
 	let missed = rows.filter(r => r.hash == missedHash).length//number of wrong guesses we recorded on this challenge
 	let correct = rows.some(r => r.hash == answerHash)//true if the guess is the answer
-	if (missed >= otpConstants.guesses) return {success: false, outcome: 'Expired.'}//the fourth wrong guess hides the challenge, so this can't be reached; the guard stays beneath it
+	if (missed >= otpConstants.guesses) return {success: false, outcome: 'Expired.'}//the fourth wrong guess deletes the challenge, so this can't be reached; the guard stays beneath it
 
 	//before considering the guess, make sure another user hasn't proven this address while this challenge was live; the send guard can't catch a race where both users held live codes and the other validated first
 	let holder = await credentialOtpHolder({type: v.type, f0: v.f0})
 	if (holder && holder.userTag != userTag) {
-		await _otpHideChallenge({userTag, tag})//the challenge is dead no matter what the guess was; the address is spoken for
+		await _otpDeleteChallenge({userTag, tag})//the challenge is dead no matter what the guess was; the address is spoken for
 		await ledgerAdd({action: v.type, event: 'Refused.', userTag, tag, json: {address: forms, guess, outcome: 'Held.'}})//an address two users reached for at once, and the one who lost the race, on the record with what they typed
 		return {success: false, outcome: 'Held.'}
 	}
 
 	if (correct) {// ✍🏻 correct guess
 
-		await credentialOtpProven({userTag, type: v.type, v, tag})//save the proof, which wants to see the visible challenge it finishes
-		await _otpHideChallenge({userTag, tag})//then close the challenge; hidden, it's found by nobody and painted for nobody
+		await credentialOtpProven({userTag, type: v.type, v, tag})//save the proof: the challenge becomes it, or her standing proof takes the tag, and the challenge is done either way
 		return {success: true}
 
 	} else {// ✍🏻 wrong guess
@@ -307,7 +305,7 @@ export async function credentialOtpEnter({tag, guess, userTag}) {
 
 		if (lives <= 0) {// ✍🏻 expired by too many wrong guesses
 
-			await _otpHideChallenge({userTag, tag})//the trail counted the guesses; hiding the row is what ends the challenge
+			await _otpDeleteChallenge({userTag, tag})//the trail counted the guesses; deleting the row is what ends the challenge
 			await ledgerAdd({action: v.type, event: 'Expired.', userTag, tag, json: {address: forms, guess}})//the fourth wrong guess closed the challenge
 			return {success: false, outcome: 'Expired.'}//treat exhausted guesses like expired; user remedy is the same: request a new code
 
@@ -318,8 +316,8 @@ export async function credentialOtpEnter({tag, guess, userTag}) {
 		}
 	}
 }
-async function _otpHideChallenge({userTag, tag}) {//close one challenge, this user's row carrying this tag; hidden, enter can't find it and the snapshot doesn't list it, and it stays in the table as evidence
-	await queryHide('credential_table', {user_tag: userTag, event_text: 'Challenged.', json: {tag}})
+async function _otpDeleteChallenge({userTag, tag}) {//close one challenge, this user's row carrying this tag: deleted, enter can't find it and the snapshot doesn't list it, and its ledger rows are the record
+	await queryDelete('credential_table', {user_tag: userTag, event_text: 'Challenged.', json: {tag}})
 }
 
 
@@ -884,9 +882,10 @@ export async function credentialOauthGet({userTag}) {//list this user's linked o
 
 /*
 email and phone: a user can prove they control any number of addresses; they're all peers, with no main or default
-each address's lifecycle is a sequence of rows for (userTag, type, f0), each stamped Mentioned., Challenged., or Proven.
-the current status of an address is the highest visible event, not the most recent--a proven address that's later re-challenged and ignored (a sudo check the user abandoned) stays proven; the earlier proof isn't undone by a newer unanswered code
-remove hides every row about that address, so a removed address doesn't linger looking pending; adding it again starts fresh
+an address she holds is one Proven. row, and an address she is proving is one Challenged. row, which becomes the proof when the code checks out, or is deleted when the flow ends any other way
+both may stand at once when she proves an address she already holds, like a sudo check; then the proof is the address, and finishing edits the proof and deletes the challenge, while abandoning leaves the proof untouched
+a mention is a ledger row only: that she typed an address is a fact worth keeping, and not a credential
+remove deletes every row about that address, so a removed address doesn't linger looking pending; adding it again starts fresh
 v throughout is the result of validateEmailOrPhone, carrying the three forms and .type like 'Email.' or 'Phone.'
 */
 
@@ -898,14 +897,15 @@ export async function credentialOtpHolder({type, f0}) {//which user, if any, has
 	return false//nobody has proven it; mentions and challenges don't reserve an address for anyone
 }
 
-export async function credentialOtpMentioned({userTag, type, v, outcome = ''}) {//record a user mentioned an address; outcome is why the send refused to go on, Held., CoolSoft., or CoolHard., or blank when a code went out
+//record in the ledger that a user mentioned an address, a fact worth keeping and not a credential; outcome is why the send refused to go on, Held., CoolSoft., or CoolHard., or blank when a code went out
+export async function credentialOtpMentioned({userTag, type, v, outcome = ''}) {
 	checkTag(userTag); checkActionOrBlank(outcome)
-	await credentialSet({userTag, type, event: 'Mentioned.', f0: v.f0, f1: v.f1, f2: v.f2})
 	await ledgerAdd({action: type, event: 'Mentioned.', userTag, json: {address: {f0: v.f0, f1: v.f1, f2: v.f2}, outcome: outcome || undefined}})//who typed which address, and when a code didn't go out, why: the evidence a held or hammered address leaves; || undefined makes a blank outcome an absent key
 }
 
 export async function credentialOtpChallenged({userTag, type, v, provider, tag = ''}) {//record we used provider to send a code to address v; tag names the challenge, and a row without one, like a fixture in the tests, never reads as live
 	checkTag(userTag); checkAction(provider); checkTagOrBlank(tag)//provider is a canonical tag like 'Amazon.' or 'Twilio.'; the endpoint maps the page's single letter before any of this
+	await queryDelete('credential_table', {user_tag: userTag, type_text: type, f0_text: v.f0, event_text: 'Challenged.'})//one challenge per address in flight: a resend replaces her earlier one, whose code dies with it; scoped by owner, so a housemate's challenge to the same address rides on
 	await credentialSet({userTag, type, event: 'Challenged.', f0: v.f0, f1: v.f1, f2: v.f2, json: tag ? {provider, tag} : {provider}})//which provider carried the code, and which challenge this is; an absent key is the blank of a property
 	await ledgerAdd({action: type, event: 'Challenged.', provider, userTag, tag, json: {address: {f0: v.f0, f1: v.f1, f2: v.f2}}})//the state of the flow, with the challenge in the tag margin and the provider in its column; the dealing itself is the send's own pair
 }
@@ -914,36 +914,37 @@ export async function credentialOtpProven({userTag, type, v, tag = ''}) {//the u
 	checkTag(userTag); checkTagOrBlank(tag)
 	let holder = await credentialOtpHolder({type, f0: v.f0})
 	if (holder && holder.userTag != userTag) return false//another user proved it first, maybe while this challenge was live; decline the claim so an address never has two holders
-	let challenges = await credentialRows({user_tag: userTag, type_text: type, f0_text: v.f0, event_text: 'Challenged.'})
-	if (!challenges.length) return false//no visible start of this flow; the user removed the address mid-challenge, and a late correct code shouldn't resurrect it
-	await credentialSet({userTag, type, event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2, json: tag ? {tag} : {}})
+	let cells = {user_tag: userTag, type_text: type, f0_text: v.f0, event_text: 'Challenged.'}; if (tag) cells.json = {tag}//her challenge for this address, the one the tag names when the caller has it
+	let challenge = (await credentialRows(cells))[0]
+	if (!challenge) return false//no start of this flow; the user removed the address mid-challenge, and a late correct code shouldn't resurrect it
+	let held = (await credentialRows({user_tag: userTag, type_text: type, f0_text: v.f0, event_text: 'Proven.'}))[0]//the proof she already holds, when she is proving an address again
+	if (held) {//the proof stands, takes the new face and the tag that proved it again, and the challenge is done
+		await queryUpdate('credential_table', {where: {hide: 0, row_tag: held.row_tag}, set: {f1_text: v.f1, f2_text: v.f2, json: tag ? {tag} : {}}})
+		await queryDelete('credential_table', {row_tag: challenge.row_tag})
+	} else {//the challenge becomes the proof: the same row edited, with the tag that proved it kept in its json
+		await queryUpdate('credential_table', {where: {hide: 0, row_tag: challenge.row_tag}, set: {event_text: 'Proven.', f1_text: v.f1, f2_text: v.f2, json: tag ? {tag} : {}}})
+	}
 	await ledgerAdd({action: type, event: 'Proven.', userTag, tag, json: {address: {f0: v.f0, f1: v.f1, f2: v.f2}}})//the challenge that proved it in the tag margin, so the proof and the send it answers gather together
 	return true
 }
 
-export async function credentialOtpGet({userTag, type}) {//a user's addresses of one type, and her live challenges among them, from one read: {addresses, challenges}. Each address is the newest row of its highest event--that one row is both the status and the face--and each challenge is the newest visible challenged row of an address, while it carries a tag and is under twenty minutes old
+//a user's addresses of one type, and her live challenges among them, from one read: {addresses, challenges}
+//an address is a Proven. row she holds or a live Challenged. row she is proving, and each live challenge is also an enter box
+export async function credentialOtpGet({userTag, type}) {
 	checkTag(userTag)
-	let rows = await credentialRows({user_tag: userTag, type_text: type})//every visible event row, newest first
-	let m = new Map()//group by normalized address
-	let challenges = []
-	for (let row of rows) {
-		if (row.event_text == 'Challenged.' && hasText(row.json.tag) && Now() < row.row_tick + otpConstants.expiration && !challenges.some(c => c.address.f0 == row.f0_text)) {//live, and the first seen for its address is the newest; a resend hides the earlier ones anyway, and a row from before tags rode json never reads as live
-			challenges.push({tag: row.json.tag, start: row.row_tick, address: {ok: true, f0: row.f0_text, f1: row.f1_text, f2: row.f2_text, type: row.type_text}})//what the page needs to draw an enter box: the tag it sends back with the guess, the start for the clock, and the address; never the answer
-		}
-		let x = m.get(row.f0_text)
-		if (!x) m.set(row.f0_text, x = {f0: row.f0_text, f1: row.f1_text, f2: row.f2_text, event: row.event_text})
-		else if (credentialEventRanks[row.event_text] > credentialEventRanks[x.event]) {//rows arrive newest first, so the first row we see at each rank is the newest of that rank
-			x.event = row.event_text
-			x.f1 = row.f1_text; x.f2 = row.f2_text//the face follows the proof; an abandoned mention of a variant form can't rewrite how a proven address shows
-		}
-	}
-	return {addresses: [...m.values()], challenges}//addresses [{f0, f1, f2, event}, ...] where event is 'Proven.', 'Challenged.' for a code sent, or 'Mentioned.'; challenges [{tag, start, address}, ...] for the enter boxes
+	let rows = await credentialRows({user_tag: userTag, type_text: type})//her Proven. and Challenged. rows, newest first; a Mentioned. row from before hideless is neither, and is skipped until the cleanup deletes it
+	let proofs = rows.filter(r => r.event_text == 'Proven.')
+	let live = rows.filter(r => r.event_text == 'Challenged.' && hasText(r.json.tag) && Now() < r.row_tick + otpConstants.expiration)//live while it carries a tag and is inside its twenty minutes; a stale one is ignored until the next send replaces it, and a row without a tag, like a test fixture, never reads as live
+	let addresses = proofs.map(r => ({f0: r.f0_text, f1: r.f1_text, f2: r.f2_text, event: 'Proven.'}))
+	for (let r of live) if (!addresses.some(a => a.f0 == r.f0_text)) addresses.push({f0: r.f0_text, f1: r.f1_text, f2: r.f2_text, event: 'Challenged.'})//pending, unless she holds it already and is proving it again, when the proof is the address
+	let challenges = live.map(r => ({tag: r.json.tag, start: r.row_tick, address: {ok: true, f0: r.f0_text, f1: r.f1_text, f2: r.f2_text, type: r.type_text}}))//what the page needs to draw an enter box: the tag it sends back with the guess, the start for the clock, and the address; never the answer
+	return {addresses, challenges}//addresses [{f0, f1, f2, event}, ...] where event is 'Proven.' or 'Challenged.' for a code sent; challenges [{tag, start, address}, ...] for the enter boxes
 }
 
-export async function credentialOtpRemove({userTag, type, f0}) {//hide every event row about this address, proven or pending
+export async function credentialOtpRemove({userTag, type, f0}) {//delete every row about this address, the proof and any challenge in flight
 	checkTag(userTag); checkText(f0)
-	await queryHide('credential_table', {user_tag: userTag, type_text: type, f0_text: f0})
-	await ledgerAdd({action: type, event: 'Removed.', userTag, json: {address: {f0}}})//one row for the remove, whatever it hid, with the one form remove is given; the rows it ended are the ones above it about this address
+	await queryDelete('credential_table', {user_tag: userTag, type_text: type, f0_text: f0})
+	await ledgerAdd({action: type, event: 'Removed.', userTag, json: {address: {f0}}})//one row for the remove, whatever it deleted, with the one form remove is given; the rows it ended are the ones above it about this address
 }
 
 //                    _            _   _       _   _                                     
@@ -1061,9 +1062,9 @@ CREATE TABLE credential_table (
 	row_tick   BIGINT    NOT NULL,
 	hide       BIGINT    NOT NULL,  -- 0 visible, nonzero hidden; the one table that still has the column: credentialRows reads around it, credentialSet inserts it 0, and queryHide sets it
 
-	user_tag   CHAR(21)  NOT NULL,  -- the user who mentioned a credential, like an address, was challenged to prove it, proved it, or removed it
-	type_text  TEXT      NOT NULL,  -- credential type, like "Phone.", "Twitter.", "Ethereum.", "Totp.", "Password." or others
-	event_text TEXT      NOT NULL,  -- 'Mentioned.', 'Challenged.', or 'Proven.': the stage of the credential's life this row records
+	user_tag   CHAR(21)  NOT NULL,  -- the user proving or holding this credential
+	type_text  TEXT      NOT NULL,  -- credential type, like "Phone.", "Oauth.", "Ethereum.", "Totp.", "Password." or others
+	event_text TEXT      NOT NULL,  -- 'Challenged.' for a flow in flight or 'Proven.' for a credential held; rows that say 'Mentioned.' are from before hideless, and leave with its cleanup
 
 	-- if this credential is a name or address, like email, phone, oauth, web3 wallet, store the validated forms here:
 	f0_text    TEXT      NOT NULL,  -- normalized form of address or name, to match as unique
@@ -1090,12 +1091,11 @@ ALTER TABLE credential_table ENABLE ROW LEVEL SECURITY;  -- zero policies: defau
 export async function credentialGet({userTag}) {//get all the credential information about the given user
 	//ttd november2025
 }
-const credentialEventRanks = {'Mentioned.': 1, 'Challenged.': 2, 'Proven.': 3}//the three stages of a credential's life, in order, so credentialOtpGet can rank a row by its stage
-export function hasEvent(event) { return hasText(event) && credentialEventRanks[event] > 0 }//true for one of the three event tags, and nothing else
+export function hasEvent(event) { return event == 'Challenged.' || event == 'Proven.' }//true for the two stages a credential row can be in, a flow in flight or a credential held, and nothing else
 export function checkEvent(event) { if (!hasEvent(event)) toss('check', {event}) }
 test(() => {
-	ok(hasEvent('Mentioned.') && hasEvent('Challenged.') && hasEvent('Proven.'))
-	ok(!hasEvent('Validated.') && !hasEvent('proven.') && !hasEvent('') && !hasEvent(4))
+	ok(hasEvent('Challenged.') && hasEvent('Proven.'))
+	ok(!hasEvent('Mentioned.') && !hasEvent('Validated.') && !hasEvent('proven.') && !hasEvent('') && !hasEvent(4))//a mention is a ledger row, never a credential row
 })
 
 //every visible credential_table row matching cells, newest first: the read every credential function starts from

@@ -40,7 +40,7 @@ async function attachState(task, browserHash) {//attach complete credential stat
 		if (totp.enrollment) task.enrollment = totp.enrollment//{uri, identifier}, rebuilt from the row's secret, so every snapshot agrees, the server render included; absent when nothing is in flight, which collapses the page's enrollment ui
 		task.wallets = await credentialWalletGet({userTag: user.userTag})//[address, ...] checksummed, zero one or two
 		task.oauths = await credentialOauthGet({userTag: user.userTag})
-		let emails = await credentialOtpGet({userTag: user.userTag, type: 'Email.'})//{addresses, challenges} from one read: [{f0, f1, f2, event}, ...] with event 'Proven.', 'Challenged.' for a code sent, or 'Mentioned.', and the live challenges among them
+		let emails = await credentialOtpGet({userTag: user.userTag, type: 'Email.'})//{addresses, challenges} from one read: [{f0, f1, f2, event}, ...] with event 'Proven.' or 'Challenged.' for a code sent, and the live challenges among them
 		let phones = await credentialOtpGet({userTag: user.userTag, type: 'Phone.'})
 		task.emails = emails.addresses
 		task.phones = phones.addresses
@@ -207,7 +207,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		//user wants to remove one of their proven wallets; f0 is the checksummed address from the list attachState returned
 		} else if (action == 'WalletRemove.') {
 			let address = checkWallet(body.f0).f0//correct the case checksum, the same way both prove steps do, because the rows are matched on f0 by equality
-			await credentialWalletRemove({userTag: user.userTag, f0: address})//scoped to this user's own rows, so an address they don't hold can only hide nothing
+			await credentialWalletRemove({userTag: user.userTag, f0: address})//scoped to this user's own rows, so an address they don't hold can only delete nothing
 
 		// 🟠 oauth
 		//the user wants to discard their proof of control of a third party account with an oauth provider
@@ -220,7 +220,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		//the user wants to remove an address, proven or still pending; f0 is the normalized form from the list attachState returned
 		} else if (action == 'EmailRemove.') {
 			checkText(body.f0)
-			await credentialOtpRemove({userTag: user.userTag, type: 'Email.', f0: body.f0})//scoped to this user's own rows, so a bad f0 can only hide nothing
+			await credentialOtpRemove({userTag: user.userTag, type: 'Email.', f0: body.f0})//scoped to this user's own rows, so a bad f0 can only delete nothing
 
 		} else if (action == 'PhoneRemove.') {
 			checkText(body.f0)

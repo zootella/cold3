@@ -65,8 +65,10 @@ grid(async () => {//otp: sanity check
 
 	let enterResult = await credentialOtpEnter({tag: m.tag, guess: m.answer, userTag})
 	ok(enterResult.success)
-	ok((await _otpLive(userTag, 'Email.')).length == 0)//the challenge closed: hidden, so it's found by nobody and painted for nobody
-	ok((await credentialRows({user_tag: userTag, event_text: 'Proven.'}))[0].json.tag == m.tag)//and the proof names the challenge that proved it
+	ok((await _otpLive(userTag, 'Email.')).length == 0)//the challenge closed: it became the proof, so nothing is in flight
+	let proof = (await credentialRows({user_tag: userTag, event_text: 'Proven.'}))[0]
+	ok(proof.row_tag == row.row_tag && proof.json.tag == m.tag)//the proof is the challenge's own row, naming the challenge that proved it
+	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 1)//one row, hidden or not: no mention, and no spent challenge behind it
 })
 grid(async () => {//otp: two addresses in flight at once, alice's email and phone
 	let userTag = Tag()
@@ -1017,43 +1019,42 @@ grid(async () => {//close account: user signs up, closes account, can't sign bac
 	ok(v.ok && v.f0 == 'closing-user')//user2 can take the freed name
 })
 
-grid(async () => {//email and phone: the lifecycle sift, and highest event wins
+grid(async () => {//email and phone: an address is a proof she holds or a challenge she is proving, and a mention is no row at all
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
+	let count = async () => await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})//every row of hers, hidden or not
 	ok((await credentialOtpGet({userTag, type: 'Email.'})).addresses.length == 0)//no addresses yet
 
 	let v = validateEmailOrPhone('alice@example.com')
 	await credentialOtpMentioned({userTag, type: v.type, v})
+	ok((await credentialOtpGet({userTag, type: 'Email.'})).addresses.length == 0 && (await count()) == 0)//a mention is a ledger row only, and the list doesn't show it
+	ok((await _ledger(userTag, 'Email.', 'Mentioned.')).length == 1)
+
+	await credentialOtpChallenged({userTag, type: v.type, v, provider: 'Amazon.', tag: Tag()})
 	let list = (await credentialOtpGet({userTag, type: 'Email.'})).addresses
-	ok(list.length == 1 && list[0].event == 'Mentioned.')//mentioned
+	ok(list.length == 1 && list[0].event == 'Challenged.' && (await count()) == 1)//pending: the challenge is the address's row
+	let started = (await credentialRows({user_tag: userTag, event_text: 'Challenged.'}))[0].row_tag
 
-	await credentialOtpChallenged({userTag, type: v.type, v, provider: 'Amazon.'})
-	list = (await credentialOtpGet({userTag, type: 'Email.'})).addresses
-	ok(list.length == 1 && list[0].event == 'Challenged.')//challenged, still one entry per address
-
-	ok(await credentialOtpProven({userTag, type: v.type, v}))//saves because a visible challenge started this flow
+	ok(await credentialOtpProven({userTag, type: v.type, v}))//saves because a challenge started this flow
 	list = (await credentialOtpGet({userTag, type: 'Email.'})).addresses
 	ok(list.length == 1 && list[0].event == 'Proven.' && list[0].f0 == v.f0)//proven
+	let proof = (await credentialRows({user_tag: userTag, event_text: 'Proven.'}))[0]
+	ok(proof.row_tag == started && (await count()) == 1)//the challenge became the proof: the same row, edited
 
 	await credentialOtpChallenged({userTag, type: v.type, v, provider: 'Amazon.'})//a later re-challenge she ignores, like an abandoned sudo check
 	let got = await credentialOtpGet({userTag, type: 'Email.'})
-	ok(got.addresses[0].event == 'Proven.')//highest event wins; the unanswered newer code doesn't demote her proof
+	ok(got.addresses.length == 1 && got.addresses[0].event == 'Proven.' && (await count()) == 2)//the proof stands as the address, with the challenge beside it in the table
 	ok(got.challenges.length == 0)//and a challenged row without a tag in its json, like this fixture and every row from before tags rode json, never reads as a live challenge
-	list = got.addresses
 
-	//she starts adding the address typed differently--a variant raw form that normalizes to the same f0, like a dotted gmail
+	//she proves the address again, typed differently--a variant raw form that normalizes to the same f0, like a dotted gmail
 	let v2 = {f0: v.f0, f1: 'Alice@Example.com', f2: 'Alice@Example.com'}//hand-built forms stand in for whatever a variant raw would validate to
-	await credentialOtpMentioned({userTag, type: v.type, v: v2})
-	list = (await credentialOtpGet({userTag, type: 'Email.'})).addresses
-	ok(list.length == 1 && list[0].event == 'Proven.' && list[0].f2 == v.f2)//the face follows the proof; her abandoned mention doesn't rewrite how the proven address shows
-
 	ok(await credentialOtpProven({userTag, type: v.type, v: v2}))//she completes the re-proof with the variant form
 	list = (await credentialOtpGet({userTag, type: 'Email.'})).addresses
-	ok(list.length == 1 && list[0].event == 'Proven.' && list[0].f2 == v2.f2)//now the new face has a proof row behind it, and shows
+	ok(list.length == 1 && list[0].event == 'Proven.' && list[0].f2 == v2.f2)//her standing proof took the new face, and the challenge is done
+	ok((await credentialRows({user_tag: userTag, event_text: 'Proven.'}))[0].row_tag == proof.row_tag && (await count()) == 1)//the same proof row, and one row in all
 })
-
-grid(async () => {//email and phone: any number of peer addresses; remove hides the whole lifecycle
+grid(async () => {//email and phone: any number of peer addresses; remove deletes every row about the address
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
@@ -1075,18 +1076,17 @@ grid(async () => {//email and phone: any number of peer addresses; remove hides 
 	await credentialOtpRemove({userTag, type: 'Email.', f0: a.f0})
 	ok((await credentialOtpGet({userTag, type: 'Email.'})).addresses.length == 0)//a removed address doesn't linger looking pending
 	ok((await credentialOtpGet({userTag, type: 'Phone.'})).addresses[0].event == 'Proven.')
+	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 1)//the phone's row alone, hidden or not
 	await credentialOtpMentioned({userTag, type: b.type, v: b})
 	await credentialOtpChallenged({userTag, type: b.type, v: b, provider: 'Amazon.'})
 	ok(await credentialOtpProven({userTag, type: b.type, v: b}))
 	let list = (await credentialOtpGet({userTag, type: 'Email.'})).addresses
 	ok(list.length == 1 && list[0].f0 == b.f0)
 
-	//she mentions a again; the fresh lifecycle starts at the beginning, hidden history doesn't leak in
+	//she mentions a again; nothing about it comes back from before, and a mention alone shows nothing
 	await credentialOtpMentioned({userTag, type: a.type, v: a})
 	list = (await credentialOtpGet({userTag, type: 'Email.'})).addresses
-	ok(list.length == 2)
-	ok(list.find(x => x.f0 == a.f0).event == 'Mentioned.')
-	ok(list.find(x => x.f0 == b.f0).event == 'Proven.')
+	ok(list.length == 1 && list[0].f0 == b.f0 && list[0].event == 'Proven.')
 })
 
 grid(async () => {//email and phone: an unproven mention reserves nothing; completed proof claims exclusively
@@ -1097,7 +1097,7 @@ grid(async () => {//email and phone: an unproven mention reserves nothing; compl
 
 	//alice mentions and gets challenged, but never proves; the address stays unclaimed
 	await credentialOtpMentioned({userTag: alice, type: v.type, v})
-	await credentialOtpChallenged({userTag: alice, type: v.type, v, provider: 'Amazon.'})
+	await credentialOtpChallenged({userTag: alice, type: v.type, v, provider: 'Amazon.', tag: Tag()})
 	ok((await credentialOtpHolder({type: v.type, f0: v.f0})) == false)
 
 	//alfred proves it--the address was his all along, alice typed hers wrong
@@ -1120,13 +1120,15 @@ grid(async () => {//otp into credential: the full flow writes lifecycle rows for
 
 	ok((await credentialOtpSend({v, provider: 'Amazon.', userTag})).success)
 	let got = await credentialOtpGet({userTag, type: 'Email.'})
-	ok(got.addresses.length == 1 && got.addresses[0].event == 'Challenged.')//the send wrote the mention and the challenge
+	ok(got.addresses.length == 1 && got.addresses[0].event == 'Challenged.')//the send wrote the challenge, and the mention went to the ledger
+	let started = (await credentialRows({user_tag: userTag, event_text: 'Challenged.'}))[0].row_tag
 	ok(got.challenges.length == 1 && got.challenges[0].tag == (await _otpCode(v.f0)).tag)//and the challenge is live in the snapshot
 
 	let m = await _otpCode(v.f0)
 	ok((await credentialOtpEnter({tag: m.tag, guess: m.answer, userTag})).success)
 	got = await credentialOtpGet({userTag, type: 'Email.'})
 	ok(got.addresses[0].event == 'Proven.' && got.challenges.length == 0)//the correct code promoted the address to proven, and nothing is in flight
+	ok((await credentialRows({user_tag: userTag, event_text: 'Proven.'}))[0].row_tag == started && (await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 1)//the challenge became the proof, one row in all
 
 	let ledger = await _ledger(userTag, 'Email.')//the three rows the flow leaves: the mention, the challenge, and the proof
 	let mentioned = ledger.find(r => r.event_text == 'Mentioned.'), challenged = ledger.find(r => r.event_text == 'Challenged.'), proven = ledger.find(r => r.event_text == 'Proven.')
@@ -1175,13 +1177,21 @@ grid(async () => {//otp into credential: a held address can't be challenged or c
 	ok(!r.success && r.outcome == 'Held.')
 	let his = await credentialOtpGet({userTag: alfred, type: 'Email.'})
 	ok(his.challenges.length == 0)//no challenge was created
-	ok(his.addresses[0].event == 'Mentioned.')//the mention is on the record
+	ok(his.addresses.length == 0)//and no row: the mention is on the record in the ledger alone
 	let mention = (await _ledger(alfred, 'Email.'))[0]//and so is why nothing went out: the third kind of record, an address one user holds and another keeps typing
 	ok(mention.event_text == 'Mentioned.' && mention.json.outcome == 'Held.' && mention.json.address.f0 == v.f0)
 
 	//alice herself can still request another code to her own address, for a future sudo check or new device
 	ok((await credentialOtpSend({v, provider: 'Amazon.', userTag: alice})).success)
 	ok((await _otpLive(alice, 'Email.')).length == 1)//and it's live beside her proof
+	ok((await credentialOtpGet({userTag: alice, type: 'Email.'})).addresses.length == 1)//which shows as one address, hers, with the new code's enter box beside it
+	let proof = (await credentialRows({user_tag: alice, type_text: 'Email.', event_text: 'Proven.'}))[0]
+	let m2 = await _otpCode(v.f0)//the second code
+	ok((await credentialOtpEnter({tag: m2.tag, guess: m2.answer, userTag: alice})).success)//she enters it: the re-proof, the flow a "still your address?" prompt will run
+	let after = (await credentialRows({user_tag: alice, type_text: 'Email.', event_text: 'Proven.'}))[0]
+	ok(after.row_tag == proof.row_tag && after.json.tag == m2.tag)//her standing proof is the same row, now naming the challenge that proved it again
+	ok((await _otpLive(alice, 'Email.')).length == 0 && (await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: alice})) == 1)//the challenge is done and gone, and one row stands
+	ok((await _ledger(alice, 'Email.', 'Proven.')).length == 2)//two proofs on the record, a year apart in the story this test stands for
 })
 
 grid(async () => {//otp into credential: two users' challenges to one address coexist, and the enter-time claim check closes the race
@@ -1199,7 +1209,7 @@ grid(async () => {//otp into credential: two users' challenges to one address co
 	ok((await credentialOtpEnter({tag: ma.tag, guess: ma.answer, userTag: alice})).success)//alice proves the address first
 	let late = await credentialOtpEnter({tag: mb.tag, guess: mb.answer, userTag: bob})//bob's code is still live, and correct
 	ok(!late.success && late.outcome == 'Held.')//but the address found its holder while his code was in flight; the enter-time check closes the race the send-time check can't see
-	ok((await _otpLive(bob, 'Email.')).length == 0)//and his dead challenge is hidden
+	ok((await _otpLive(bob, 'Email.')).length == 0 && (await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: bob})) == 0)//and his dead challenge is deleted, leaving him no row
 	let refused = await _ledger(bob, 'Email.', 'Refused.')//the lost race is on the record under bob, with the challenge it closed
 	ok(refused.length == 1 && refused[0].json.outcome == 'Held.' && refused[0].tag_text == mb.tag)
 })
@@ -1210,7 +1220,8 @@ grid(async () => {//otp into credential: removing an address mid-challenge takes
 	let userTag = Tag()
 	let v = validateEmailOrPhone(Tag() + '@example.com')
 	await credentialOtpSend({v, provider: 'Amazon.', userTag})
-	await credentialOtpRemove({userTag, type: 'Email.', f0: v.f0})//she removes the address while the challenge is still live; remove hides every row about the address, the challenge included
+	await credentialOtpRemove({userTag, type: 'Email.', f0: v.f0})//she removes the address while the challenge is still live; remove deletes every row about the address, the challenge included
+	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 0)
 	ok((await _ledger(userTag, 'Email.', 'Removed.'))[0].json.address.f0 == v.f0)//one row for the remove, naming the address
 	let m = await _otpCode(v.f0)
 	ok((await credentialOtpEnter({tag: m.tag, guess: m.answer, userTag})).outcome == 'Expired.')//the code itself is still correct, but the challenge is gone with the address
