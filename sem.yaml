@@ -1,5 +1,5 @@
 summary:
-  generated: 2026sep15.1444.4369
+  generated: 2026sep25.0343.11649
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -84,12 +84,14 @@ summary:
     - "@resvg/resvg-js"
     - "@resvg/resvg-wasm"
     - "@scure/bip39"
+    - "@sendgrid/mail"
     - "@vitejs/plugin-vue"
     - class-variance-authority
     - clsx
     - fast-glob
     - is-mobile
     - qrcode
+    - tw-animate-css
   🐣 Pre-1.0 version installed:
     - "@auth/core"
     - "@electric-sql/pglite"
@@ -109,6 +111,7 @@ summary:
     - "@uppy/core"
     - "@uppy/dashboard"
     - "@vitejs/plugin-vue"
+    - "@vueuse/core"
     - "@wagmi/connectors"
     - h3
     - lucide-vue-next
@@ -196,8 +199,8 @@ modules:
     versions:
       declared: ^0.41.2 on 2026apr14 5m old
       installed: 0.41.2 on 2026apr14 5m old 🐣 Pre-1.0 version installed
-      current: 0.41.3 on 2026jul20 1m old
-      latest: 0.41.3 on 2026jul20 1m old
+      current: 0.41.3 on 2026jul20 2m old
+      latest: 0.41.3 on 2026jul20 2m old
     downloads:
       weekly: 4,024,920
       on: 2026jul31.1940.14666
@@ -209,8 +212,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 6m old
       installed: 3.1076.0 on 2026jun29 2m old
-      current: 3.1132.0 on 2026sep14 0m old
-      latest: 3.1132.0 on 2026sep14 0m old
+      current: 3.1140.0 on 2026sep24 0m old
+      latest: 3.1140.0 on 2026sep24 0m old
     downloads:
       weekly: 34,442,501
       on: 2026aug18.1523.45867
@@ -222,8 +225,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 6m old
       installed: 3.1076.0 on 2026jun29 2m old
-      current: 3.1132.0 on 2026sep14 0m old
-      latest: 3.1132.0 on 2026sep14 0m old
+      current: 3.1140.0 on 2026sep24 0m old
+      latest: 3.1140.0 on 2026sep24 0m old
     downloads:
       weekly: 3,186,203
       on: 2026aug18.1523.45867
@@ -235,8 +238,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 6m old
       installed: 3.1076.0 on 2026jun29 2m old
-      current: 3.1132.0 on 2026sep14 0m old
-      latest: 3.1132.0 on 2026sep14 0m old
+      current: 3.1140.0 on 2026sep24 0m old
+      latest: 3.1140.0 on 2026sep24 0m old
     downloads:
       weekly: 3,078,359
       on: 2026aug18.1523.45867
@@ -248,8 +251,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 6m old
       installed: 3.1076.0 on 2026jun29 2m old
-      current: 3.1132.0 on 2026sep14 0m old
-      latest: 3.1132.0 on 2026sep14 0m old
+      current: 3.1140.0 on 2026sep24 0m old
+      latest: 3.1140.0 on 2026sep24 0m old
     downloads:
       weekly: 16,337,605
       on: 2026aug18.1523.45867
@@ -259,7 +262,7 @@ modules:
     note: "test: wasm postgres for local dev tests"
     from: root
     versions:
-      declared: ^0.3.15 on 2026jan15 7m old
+      declared: ^0.3.15 on 2026jan15 8m old
       installed: 0.3.16 on 2026mar10 6m old 🐣 Pre-1.0 version installed
       current: 0.3.16 on 2026mar10 6m old
       latest: 0.5.8 on 2026aug26 0m old
@@ -324,9 +327,9 @@ modules:
     note: "build: mnemonic phrases for seal"
     from: root
     versions:
-      declared: ^1.6.0 on 2025apr24 16m old
-      installed: 1.6.0 on 2025apr24 16m old 🕰️ Installed version 1+ year old
-      current: 1.6.0 on 2025apr24 16m old
+      declared: ^1.6.0 on 2025apr24 17m old
+      installed: 1.6.0 on 2025apr24 17m old 🕰️ Installed version 1+ year old
+      current: 1.6.0 on 2025apr24 17m old
       latest: 2.4.0 on 2026aug28 0m old 🎁 Major new version available
     downloads:
       weekly: 7,182,875
@@ -337,10 +340,10 @@ modules:
     note: "lambda: twilio sendgrid email delivery from lambda"
     from: net23
     versions:
-      declared: ^8.1.6 on 2025sep19 11m old
-      installed: 8.1.6 on 2025sep19 11m old
-      current: 8.1.6 on 2025sep19 11m old
-      latest: 8.1.6 on 2025sep19 11m old
+      declared: ^8.1.6 on 2025sep19 12m old
+      installed: 8.1.6 on 2025sep19 12m old 🕰️ Installed version 1+ year old
+      current: 8.1.6 on 2025sep19 12m old
+      latest: 8.1.6 on 2025sep19 12m old
     downloads:
       weekly: 3,858,786
       on: 2026aug18.1523.45867
@@ -352,8 +355,8 @@ modules:
     versions:
       declared: ^2.95.3 on 2026feb06 7m old
       installed: 2.108.2 on 2026jun15 3m old
-      current: 2.116.0 on 2026sep07 0m old
-      latest: 2.116.0 on 2026sep07 0m old
+      current: 2.117.1 on 2026sep23 0m old
+      latest: 2.117.1 on 2026sep23 0m old
     downloads:
       weekly: 21,127,352
       on: 2026aug18.1523.29150
@@ -363,10 +366,10 @@ modules:
     note: "front: form control normalization plugin, loaded via @plugin in css"
     from: site
     versions:
-      declared: ^0.5.11 on 2025dec17 8m old
-      installed: 0.5.11 on 2025dec17 8m old 🐣 Pre-1.0 version installed
-      current: 0.5.11 on 2025dec17 8m old
-      latest: 0.5.11 on 2025dec17 8m old
+      declared: ^0.5.11 on 2025dec17 9m old
+      installed: 0.5.11 on 2025dec17 9m old 🐣 Pre-1.0 version installed
+      current: 0.5.11 on 2025dec17 9m old
+      latest: 0.5.11 on 2025dec17 9m old
     downloads:
       weekly: 3,743,453
       on: 2026aug18.1523.58589
@@ -447,10 +450,10 @@ modules:
     note: "build: node file trace to build lean net23.zip"
     from: net23
     versions:
-      declared: ^1.3.2 on 2026feb23 6m old
+      declared: ^1.3.2 on 2026feb23 7m old
       installed: 1.10.2 on 2026may28 3m old
-      current: 1.11.0 on 2026aug18 0m old
-      latest: 1.11.0 on 2026aug18 0m old
+      current: 1.11.0 on 2026aug18 1m old
+      latest: 1.11.0 on 2026aug18 1m old
     downloads:
       weekly: 5,761,349
       on: 2026aug18.1523.45867
@@ -476,7 +479,7 @@ modules:
       declared: ^14.2.1 on 2026feb10 7m old
       installed: 14.3.0 on 2026may01 4m old
       current: 14.4.0 on 2026jul29 1m old
-      latest: 14.4.0 on 2026jul29 1m old
+      latest: 15.0.0 on 2026sep16 0m old 🎁 Major new version available
     downloads:
       weekly: 8,467,612
       on: 2026aug18.1523.45867
@@ -489,8 +492,8 @@ modules:
       - site
     versions:
       declared: ^7.1.6 on 2026feb01 7m old
-      installed: 7.2.1 on 2026feb18 6m old
-      current: 7.2.1 on 2026feb18 6m old
+      installed: 7.2.1 on 2026feb18 7m old
+      current: 7.2.1 on 2026feb18 7m old
       latest: 8.2.0 on 2026aug27 0m old 🎁 Major new version available
     downloads:
       weekly: 859,282
@@ -504,7 +507,7 @@ modules:
       - site
     versions:
       declared: ^3.3.2 on 2026feb01 7m old
-      installed: 3.5.5 on 2026jun25 2m old
+      installed: 3.5.5 on 2026jun25 3m old
       current: 3.6.5 on 2026aug27 0m old
       latest: 3.6.5 on 2026aug27 0m old
     downloads:
@@ -519,7 +522,7 @@ modules:
       - site
     versions:
       declared: ^2.23.8 on 2026mar10 6m old
-      installed: 2.23.10 on 2026jun24 2m old
+      installed: 2.23.10 on 2026jun24 3m old
       current: 2.25.0 on 2026sep14 0m old
       latest: 2.25.0 on 2026sep14 0m old
     downloads:
@@ -544,10 +547,10 @@ modules:
     note: "front: classname conditional builder; shadcn pattern"
     from: site
     versions:
-      declared: ^2.1.1 on 2024apr23 28m old
-      installed: 2.1.1 on 2024apr23 28m old 🕰️ Installed version 1+ year old
-      current: 2.1.1 on 2024apr23 28m old
-      latest: 2.1.1 on 2024apr23 28m old
+      declared: ^2.1.1 on 2024apr23 29m old
+      installed: 2.1.1 on 2024apr23 29m old 🕰️ Installed version 1+ year old
+      current: 2.1.1 on 2024apr23 29m old
+      latest: 2.1.1 on 2024apr23 29m old
     downloads:
       weekly: 102,317,809
       on: 2026aug18.1523.45867
@@ -585,8 +588,8 @@ modules:
     versions:
       declared: ^11.3.4 on 2026mar03 6m old
       installed: 11.3.5 on 2026may06 4m old
-      current: 11.4.0 on 2026jul23 1m old
-      latest: 11.4.0 on 2026jul23 1m old
+      current: 11.4.1 on 2026sep22 0m old
+      latest: 11.4.1 on 2026sep22 0m old
     downloads:
       weekly: 180,972,821
       on: 2026aug18.1523.45867
@@ -596,7 +599,7 @@ modules:
     note: "nuxt: http framework; held at v1, v2 arrives with nitro v3 and nuxt 5; abstracted behind getWorker* functions"
     from: icarus
     versions:
-      declared: ^1.15.5 on 2026jan15 7m old
+      declared: ^1.15.5 on 2026jan15 8m old
       installed: 1.15.11 on 2026apr01 5m old
       current: 1.15.11 on 2026apr01 5m old
       latest: 2.0.1-rc.32 on 2026sep14 0m old 🎁 Major new version available
@@ -609,10 +612,10 @@ modules:
     note: "widget: browser detection; runs everywhere, only meaningful in browser"
     from: icarus
     versions:
-      declared: ^5.0.0 on 2024oct16 22m old
-      installed: 5.0.0 on 2024oct16 22m old 🕰️ Installed version 1+ year old
-      current: 5.0.0 on 2024oct16 22m old
-      latest: 5.0.0 on 2024oct16 22m old
+      declared: ^5.0.0 on 2024oct16 23m old
+      installed: 5.0.0 on 2024oct16 23m old 🕰️ Installed version 1+ year old
+      current: 5.0.0 on 2024oct16 23m old
+      latest: 5.0.0 on 2024oct16 23m old
     downloads:
       weekly: 2,333,059
       on: 2026aug18.1523.29150
@@ -623,9 +626,9 @@ modules:
     from: icarus
     versions:
       declared: ^1.12.36 on 2026jan30 7m old
-      installed: 1.13.7 on 2026jun18 2m old
-      current: 1.13.13 on 2026sep10 0m old
-      latest: 1.13.13 on 2026sep10 0m old
+      installed: 1.13.7 on 2026jun18 3m old
+      current: 1.13.14 on 2026sep24 0m old
+      latest: 1.13.14 on 2026sep24 0m old
     downloads:
       weekly: 15,907,364
       on: 2026aug18.1523.29150
@@ -635,10 +638,10 @@ modules:
     note: "front: icon library for vue; pre-1.0 by convention"
     from: site
     versions:
-      declared: ^0.574.0 on 2026feb17 6m old
-      installed: 0.574.0 on 2026feb17 6m old 🐣 Pre-1.0 version installed 🪦 Installed version marked deprecated on npm
-      current: 0.574.0 on 2026feb17 6m old
-      latest: 1.0.0 on 2026mar23 5m old 🎁 Major new version available
+      declared: ^0.574.0 on 2026feb17 7m old
+      installed: 0.574.0 on 2026feb17 7m old 🐣 Pre-1.0 version installed 🪦 Installed version marked deprecated on npm
+      current: 0.574.0 on 2026feb17 7m old
+      latest: 1.0.0 on 2026mar23 6m old 🎁 Major new version available
     downloads:
       weekly: 766,390
       on: 2026aug18.1523.45867
@@ -648,9 +651,9 @@ modules:
     note: "test: url-friendly unique id generator"
     from: root
     versions:
-      declared: ^5.1.6 on 2025sep22 11m old
-      installed: 5.1.16 on 2026jun24 2m old
-      current: 5.1.16 on 2026jun24 2m old
+      declared: ^5.1.6 on 2025sep22 12m old
+      installed: 5.1.16 on 2026jun24 3m old
+      current: 5.1.16 on 2026jun24 3m old
       latest: 6.0.1 on 2026aug03 1m old 🎁 Major new version available
     downloads:
       weekly: 163,468,313
@@ -661,7 +664,7 @@ modules:
     note: "nuxt: server engine; bundles h3 v1, will bring h3 v2 with nitro v3"
     from: site
     versions:
-      declared: ^2.13.1 on 2026jan15 7m old
+      declared: ^2.13.1 on 2026jan15 8m old
       installed: 2.13.4 on 2026apr29 4m old
       current: 2.13.4 on 2026apr29 4m old
       latest: 2.13.4 on 2026apr29 4m old
@@ -674,7 +677,7 @@ modules:
     note: "nuxt: web framework; annual upgrade cadence, sweet spot is midwinter"
     from: site
     versions:
-      declared: ^4.3.0 on 2026jan22 7m old
+      declared: ^4.3.0 on 2026jan22 8m old
       installed: 4.4.8 on 2026jun08 3m old
       current: 4.5.2 on 2026aug05 1m old
       latest: 4.5.2 on 2026aug05 1m old
@@ -687,10 +690,10 @@ modules:
     note: "og: social share cards; single maintainer; unpinned from 6.0.0-beta.15 to current v6 when nuxt 4.4.6's island-hash fix forced past the beta; v5 once broke nitro wasm bundling"
     from: site
     versions:
-      declared: ^6.7.0 on 2026jun24 2m old
-      installed: 6.7.0 on 2026jun24 2m old
-      current: 6.8.0 on 2026sep14 0m old
-      latest: 6.8.0 on 2026sep14 0m old
+      declared: ^6.7.0 on 2026jun24 3m old
+      installed: 6.7.0 on 2026jun24 3m old
+      current: 6.9.0 on 2026sep23 0m old
+      latest: 6.9.0 on 2026sep23 0m old
     downloads:
       weekly: 124,309
       on: 2026aug18.1523.58589
@@ -714,7 +717,7 @@ modules:
     from: root
     versions:
       declared: ^9.5.0 on 2026feb04 7m old
-      installed: 9.5.1 on 2026apr25 4m old
+      installed: 9.5.1 on 2026apr25 5m old
       current: 9.5.2 on 2026sep03 0m old
       latest: 9.5.2 on 2026sep03 0m old
     downloads:
@@ -756,8 +759,8 @@ modules:
     versions:
       declared: ^2.8.0 on 2026jan28 7m old
       installed: 2.10.1 on 2026jun26 2m old
-      current: 2.10.4 on 2026aug25 0m old
-      latest: 2.10.4 on 2026aug25 0m old
+      current: 2.10.5 on 2026sep21 0m old
+      latest: 2.10.5 on 2026sep21 0m old
     downloads:
       weekly: 1,419,737
       on: 2026aug18.1523.58589
@@ -767,10 +770,10 @@ modules:
     note: "og: html/css to svg by vercel; unpinned from 0.15.2 to current; 0.16+ once broke workers wasm; og-image 6.7.0 peers satori >=0.19.2"
     from: site
     versions:
-      declared: ^0.26.0 on 2026mar20 5m old
-      installed: 0.26.0 on 2026mar20 5m old 🐣 Pre-1.0 version installed
-      current: 0.26.0 on 2026mar20 5m old
-      latest: 0.33.4 on 2026aug24 0m old
+      declared: ^0.26.0 on 2026mar20 6m old
+      installed: 0.26.0 on 2026mar20 6m old 🐣 Pre-1.0 version installed
+      current: 0.26.0 on 2026mar20 6m old
+      latest: 0.33.5 on 2026sep22 0m old
     downloads:
       weekly: 3,742,212
       on: 2026aug18.1523.58589
@@ -781,9 +784,9 @@ modules:
     from: root
     versions:
       declared: ^7.7.4 on 2026feb05 7m old
-      installed: 7.8.5 on 2026jun19 2m old
-      current: 7.8.5 on 2026jun19 2m old
-      latest: 7.8.5 on 2026jun19 2m old
+      installed: 7.8.5 on 2026jun19 3m old
+      current: 7.8.5 on 2026jun19 3m old
+      latest: 7.8.5 on 2026jun19 3m old
     downloads:
       weekly: 716,789,236
       on: 2026aug18.1523.29150
@@ -793,10 +796,10 @@ modules:
     note: "provider: framework cli for deploying to aws lambda"
     from: net23
     versions:
-      declared: ^4.33.0 on 2026feb19 6m old
-      installed: 4.38.1 on 2026jun19 2m old
-      current: 4.42.0 on 2026sep09 0m old
-      latest: 4.42.0 on 2026sep09 0m old
+      declared: ^4.33.0 on 2026feb19 7m old
+      installed: 4.38.1 on 2026jun19 3m old
+      current: 4.43.0 on 2026sep24 0m old
+      latest: 4.43.0 on 2026sep24 0m old
     downloads:
       weekly: 926,530
       on: 2026aug18.1523.45867
@@ -807,7 +810,7 @@ modules:
     from: net23
     versions:
       declared: ^14.5.0 on 2026feb24 6m old
-      installed: 14.7.4 on 2026jun23 2m old
+      installed: 14.7.4 on 2026jun23 3m old
       current: 14.8.2 on 2026sep06 0m old
       latest: 14.8.2 on 2026sep06 0m old
     downloads:
@@ -832,7 +835,7 @@ modules:
     note: "front: merges classes without style conflicts; shadcn pattern"
     from: site
     versions:
-      declared: ^3.4.1 on 2026feb15 6m old
+      declared: ^3.4.1 on 2026feb15 7m old
       installed: 3.6.0 on 2026may10 4m old
       current: 3.7.0 on 2026sep12 0m old
       latest: 3.7.0 on 2026sep12 0m old
@@ -858,10 +861,10 @@ modules:
     note: "front: v4 replacement for tailwindcss-animate"
     from: site
     versions:
-      declared: ^1.4.0 on 2025sep24 11m old
-      installed: 1.4.0 on 2025sep24 11m old
-      current: 1.4.0 on 2025sep24 11m old
-      latest: 1.4.0 on 2025sep24 11m old
+      declared: ^1.4.0 on 2025sep24 12m old
+      installed: 1.4.0 on 2025sep24 12m old 🕰️ Installed version 1+ year old
+      current: 1.4.0 on 2025sep24 12m old
+      latest: 1.4.0 on 2025sep24 12m old
     downloads:
       weekly: 31,822,665
       on: 2026aug18.1523.58589
@@ -872,8 +875,8 @@ modules:
     from: net23
     versions:
       declared: ^5.13.0 on 2026mar12 6m old
-      installed: 5.13.1 on 2026mar24 5m old
-      current: 5.13.1 on 2026mar24 5m old
+      installed: 5.13.1 on 2026mar24 6m old
+      current: 5.13.1 on 2026mar24 6m old
       latest: 6.1.1 on 2026sep10 0m old 🎁 Major new version available
     downloads:
       weekly: 4,891,316
@@ -897,7 +900,7 @@ modules:
     note: "og: cache driver abstraction; injected by nuxi module add, now using lru-cache driver"
     from: site
     versions:
-      declared: ^1.17.4 on 2026jan15 7m old
+      declared: ^1.17.4 on 2026jan15 8m old
       installed: 1.17.5 on 2026mar26 5m old
       current: 1.17.5 on 2026mar26 5m old
       latest: 1.17.5 on 2026mar26 5m old
@@ -910,10 +913,10 @@ modules:
     note: "widget: video player; latest tag is behind installed, riding post-1.0 channel"
     from: site
     versions:
-      declared: ^1.12.13 on 2025feb16 18m old 🏺 Declared release 6+ months earlier than installed
+      declared: ^1.12.13 on 2025feb16 19m old 🏺 Declared release 6+ months earlier than installed
       installed: 1.15.6 on 2026jun10 3m old
       current: 1.15.6 on 2026jun10 3m old
-      latest: 0.6.15 on 2024apr19 28m old 🩸 Latest tag is behind installed
+      latest: 0.6.15 on 2024apr19 29m old 🩸 Latest tag is behind installed
     downloads:
       weekly: 69,431
       on: 2026aug18.1523.58589
@@ -926,9 +929,9 @@ modules:
       - site
     versions:
       declared: ^2.45.1 on 2026jan29 7m old
-      installed: 2.53.1 on 2026jun20 2m old
-      current: 2.56.5 on 2026sep13 0m old
-      latest: 2.56.5 on 2026sep13 0m old
+      installed: 2.53.1 on 2026jun20 3m old
+      current: 2.56.9 on 2026sep24 0m old
+      latest: 2.56.9 on 2026sep24 0m old
     downloads:
       weekly: 4,704,818
       on: 2026aug18.1523.29150
@@ -938,10 +941,10 @@ modules:
     note: "build: held at v6, nuxt 4 constraint; icarus and oauth declare directly for their own builds"
     from: icarus
     versions:
-      declared: ^6.4.1 on 2025oct20 10m old
+      declared: ^6.4.1 on 2025oct20 11m old
       installed: 6.4.3 on 2026jun01 3m old
       current: 6.4.3 on 2026jun01 3m old
-      latest: 8.3.0 on 2026sep10 0m old 🎁 Major new version available
+      latest: 8.3.1 on 2026sep24 0m old 🎁 Major new version available
     downloads:
       weekly: 142,923,941
       on: 2026aug18.1523.45867
@@ -953,10 +956,10 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^3.5.27 on 2026jan19 7m old
-      installed: 3.5.39 on 2026jun25 2m old
-      current: 3.5.42 on 2026aug27 0m old
-      latest: 3.5.42 on 2026aug27 0m old
+      declared: ^3.5.27 on 2026jan19 8m old
+      installed: 3.5.39 on 2026jun25 3m old
+      current: 3.5.43 on 2026sep17 0m old
+      latest: 3.5.43 on 2026sep17 0m old
     downloads:
       weekly: 9,793,131
       on: 2026aug18.1523.45867
@@ -982,9 +985,9 @@ modules:
     from: site
     versions:
       declared: ^4.63.0 on 2026feb05 7m old
-      installed: 4.105.0 on 2026jun25 2m old
-      current: 4.131.2 on 2026sep14 0m old
-      latest: 4.131.2 on 2026sep14 0m old
+      installed: 4.105.0 on 2026jun25 3m old
+      current: 4.139.0 on 2026sep24 0m old
+      latest: 4.139.0 on 2026sep24 0m old
     downloads:
       weekly: 15,295,217
       on: 2026jul21.1759.35951
@@ -1007,7 +1010,7 @@ modules:
     note: "validate: email validation with zod mini"
     from: icarus
     versions:
-      declared: ^4.3.6 on 2026jan22 7m old
+      declared: ^4.3.6 on 2026jan22 8m old
       installed: 4.4.3 on 2026may04 4m old
       current: 4.6.5 on 2026sep13 0m old
       latest: 4.6.5 on 2026sep13 0m old
