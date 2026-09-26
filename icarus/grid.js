@@ -968,6 +968,7 @@ grid(async () => {//sign-up creates three credentials, then user removes name an
 	await credentialNameSet({userTag, raw1: 'New-User', raw2: 'New User'})
 	await credentialPasswordSet({userTag, hash: random32(), cycles: 42})
 	await credentialBrowserSet({userTag, browserHash})
+	await credentialTotpEnroll1({userTag})//and an enrollment in flight, the kind of row a closed account must not keep either
 
 	//verify all three credentials exist
 	ok((await credentialNameGet({userTag})).name.f0 == 'new-user')
@@ -996,11 +997,14 @@ grid(async () => {//close account: user signs up, closes account, can't sign bac
 	await credentialNameSet({userTag, raw1: 'Closing-User', raw2: 'Closing User'})
 	await credentialPasswordSet({userTag, hash: random32(), cycles: 50})
 	await credentialBrowserSet({userTag, browserHash})
+	await credentialTotpEnroll1({userTag})//and a totp enrollment she never finishes, a flow in flight when she closes
 
-	//verify all three credentials exist
+	//verify the three credentials and the enrollment exist
 	ok((await credentialNameGet({userTag})).name.f0 == 'closing-user')
 	ok((await credentialPasswordGet({userTag})).cycles == 50)
 	ok((await credentialBrowserGet({browserHash})).userTag == userTag)
+	ok((await credentialTotpGet({userTag})).enrollment.uri)//the enrollment is in flight
+	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 4)//name, password, session, and the challenge
 
 	//user closes their account
 	await credentialCloseAccount({userTag})
@@ -1009,7 +1013,8 @@ grid(async () => {//close account: user signs up, closes account, can't sign bac
 	ok((await credentialNameGet({userTag})) == false)//name gone
 	ok((await credentialPasswordGet({userTag})) == false)//password gone
 	ok((await credentialBrowserGet({browserHash})) == false)//signed out
-	let closed = await _ledger(userTag, 'Account.')//one row for the closure; what the account held is the three Proven. rows above it
+	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 0)//nothing remains, hidden or not, the enrollment in flight included: a closed account holds nothing, and the ledger is its record
+	let closed = await _ledger(userTag, 'Account.')//one row for the closure; what the account held is the rows above it
 	ok(closed.length == 1 && closed[0].event_text == 'Closed.')
 	ok((await queryGet('ledger_table', {user_tag_text: userTag, event_text: 'Removed.'})).length == 0)//and no Removed. row per credential
 

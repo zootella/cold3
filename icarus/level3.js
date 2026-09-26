@@ -44,7 +44,6 @@ queryTop,
 queryGet,
 queryAddRow,
 queryAddRows,
-queryHide,
 queryUpdate,
 queryDelete,
 
@@ -932,7 +931,7 @@ export async function credentialOtpProven({userTag, type, v, tag = ''}) {//the u
 //an address is a Proven. row she holds or a live Challenged. row she is proving, and each live challenge is also an enter box
 export async function credentialOtpGet({userTag, type}) {
 	checkTag(userTag)
-	let rows = await credentialRows({user_tag: userTag, type_text: type})//her Proven. and Challenged. rows, newest first; a Mentioned. row from before hideless is neither, and is skipped until the cleanup deletes it
+	let rows = await credentialRows({user_tag: userTag, type_text: type})//her Proven. and Challenged. rows, newest first; a Mentioned. row is an old one, neither stage, and is skipped until the cleanup deletes it
 	let proofs = rows.filter(r => r.event_text == 'Proven.')
 	let live = rows.filter(r => r.event_text == 'Challenged.' && hasText(r.json.tag) && Now() < r.row_tick + otpConstants.expiration)//live while it carries a tag and is inside its twenty minutes; a stale one is ignored until the next send replaces it, and a row without a tag, like a test fixture, never reads as live
 	let addresses = proofs.map(r => ({f0: r.f0_text, f1: r.f1_text, f2: r.f2_text, event: 'Proven.'}))
@@ -1047,10 +1046,10 @@ export async function credentialNameRemove({userTag}) {
 //  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|  \___|_|\___/|___/\___|  \__,_|\___\___\___/ \__,_|_| |_|\__|
 //
 
-//permanently close a user's account, hiding all their proven credentials across types — the Challenged. rows stay as the audit trail
+//permanently close a user's account: delete every credential row of hers, whatever its type or stage, since a closed account holds nothing and the ledger is the audit trail
 export async function credentialCloseAccount({userTag}) {
 	checkTag(userTag)
-	await queryHide('credential_table', {user_tag: userTag, event_text: 'Proven.'})//hide active credentials across all types in one shot; Challenged. rows stay visible as audit
+	await queryDelete('credential_table', {user_tag: userTag})//every row of hers in one statement, a flow in flight and any old hidden rows included
 	await ledgerAdd({action: 'Account.', event: 'Closed.', userTag})//one row for the closure; what the account held is the Proven. and Removed. rows above it
 }
 
@@ -1060,11 +1059,11 @@ SQL(`
 CREATE TABLE credential_table (
 	row_tag    CHAR(21)  NOT NULL PRIMARY KEY,
 	row_tick   BIGINT    NOT NULL,
-	hide       BIGINT    NOT NULL,  -- 0 visible, nonzero hidden; the one table that still has the column: credentialRows reads around it, credentialSet inserts it 0, and queryHide sets it
+	hide       BIGINT    NOT NULL,  -- 0 visible, nonzero hidden; the one table that still has the column: reads go through credentialRows, inserts say 0, nothing sets it, so a nonzero row is an old one waiting for the cleanup
 
 	user_tag   CHAR(21)  NOT NULL,  -- the user proving or holding this credential
 	type_text  TEXT      NOT NULL,  -- credential type, like "Phone.", "Oauth.", "Ethereum.", "Totp.", "Password." or others
-	event_text TEXT      NOT NULL,  -- 'Challenged.' for a flow in flight or 'Proven.' for a credential held; rows that say 'Mentioned.' are from before hideless, and leave with its cleanup
+	event_text TEXT      NOT NULL,  -- 'Challenged.' for a flow in flight or 'Proven.' for a credential held; an old row may still say 'Mentioned.', and leaves with the cleanup
 
 	-- if this credential is a name or address, like email, phone, oauth, web3 wallet, store the validated forms here:
 	f0_text    TEXT      NOT NULL,  -- normalized form of address or name, to match as unique
@@ -1223,9 +1222,9 @@ A row is complete, and duplicates nothing. Complete: an address or a name in all
 
 A dealing gets two rows, Asked. before the call and Answered. after, joined by the challenge or nonce in tag_text, with how long we waited in duration on the close. A provider that never answers leaves the open row with no close, and counting those is how we learn how often that happens. The instrument needs no timeout of ours, which is why none is set. For the message send the wait spans the hop through our lambda, cold start included, and the provider's own time rides inside the task the close carries.
 
-PostgREST has no transactions, so a table change and its ledger row are two round trips, one after the other: the table change first, then the ledger write, so a row never says something happened that didn't. Nothing special handles a failure. A failed call throws to the top gate, and if it was the ledger write, the change stood and its row is missing, which is the gap hideless makes visible once rows are deleted rather than hidden. No retry, no compensating write, no try around either call. The two run in sequence rather than at once, because firing two Supabase calls together from one request has caused delays and 409s. If a missing row ever matters, a Postgres function called through supabase.rpc runs inside one transaction, the one path in the stack that could make the pair atomic. The awaited write costs on the order of a hundred milliseconds on every path that mutates, accepted because those paths are rare and human-paced.
+PostgREST has no transactions, so a table change and its ledger row are two round trips, one after the other: the table change first, then the ledger write, so a row never says something happened that didn't. Nothing special handles a failure. A failed call throws to the top gate, and if it was the ledger write, the change stood and its row is missing, and nothing else records it, since a live table keeps no history of its own. No retry, no compensating write, no try around either call. The two run in sequence rather than at once, because firing two Supabase calls together from one request has caused delays and 409s. If a missing row ever matters, a Postgres function called through supabase.rpc runs inside one transaction, the one path in the stack that could make the pair atomic. The awaited write costs on the order of a hundred milliseconds on every path that mutates, accepted because those paths are rare and human-paced.
 
-A record table is never mutated, and a record gets no ledger row: ledger_table, delay_table, and trail_table are appended to, and a wrong record is corrected by a later record. An old row is never migrated to the current shape either. The ledger is a notebook: a row keeps the shape the code of its day gave it, wrapper_hash names that code, and a reader who meets an old shape looks the build up rather than expecting the table to speak one language. The ledger is the history; a live table's own history, the hidden rows credential_table keeps today, is a duplicate with less in it, and hideless removes it.
+A record table is never mutated, and a record gets no ledger row: ledger_table, delay_table, and trail_table are appended to, and a wrong record is corrected by a later record. An old row is never migrated to the current shape either. The ledger is a notebook: a row keeps the shape the code of its day gave it, wrapper_hash names that code, and a reader who meets an old shape looks the build up rather than expecting the table to speak one language. The ledger is the history, and no live table keeps one of its own: a row is edited when its data changes and deleted when its absence is the truth.
 
 Nothing in production reads this table yet. The grid tests read it with queryGet, filtered by action, user, hash, or tag, and their assertions ride the flow tests beside the credential rows rather than a suite of their own. A ledgerGet family arrives with the first staff page or robin query that wants one.
 */

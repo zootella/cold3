@@ -1716,7 +1716,7 @@ export async function queryTop({table, title, cell}) {
 	return data[0]//data is an array with one element, or empty if none found
 }
 
-//apply the given cells to a query as equality filters; queryGet, queryHide, queryUpdate, and queryDelete share this so every helper speaks identical filters
+//apply the given cells to a query as equality filters; queryGet, queryUpdate, and queryDelete share this so every helper speaks identical filters
 //a plain-object value holds json path filters on that column, named like every other cell by its own column title: some_json: {city: 'Akron'} filters some_json->>city
 //level2 alone spells the path--callers pass bare property names, PostgREST single-quotes the key when it renders SQL, and supafake in grid renders that same spelling for PGlite
 function applyQueryCells(query, cells) {
@@ -1767,23 +1767,13 @@ export async function queryAddRows({table, rows}) {
 	if (error) toss('supabase', {error})
 }
 
-//set hide from 0 to hideSet, default 1, on the rows matching cells; credential_table alone still has the column, and this alone sets it
-export async function queryHide(table, cells, options) {//cells filters the same way queryGet's does, json paths included
-	let hideSet = options?.hideSet || 1
-	checkQueryTitle(table); checkQueryCells(cells)
-	const {database} = await getDatabase()
-	let query = applyQueryCells(database.from(table).update({hide: hideSet}).eq('hide', 0), cells)
-	let {data, error} = await query.select()
-	if (error) toss('supabase', {error})
-}
-
 //edit the rows where finds, writing every cell in set into each of them; the two are named so a caller can't swap them
 //returns the rows as they stand after the edit, an empty array when nothing matched; a json cell in set replaces the column whole, it never merges
 export async function queryUpdate(table, {where, set}) {//where filters the same way queryGet's cells do, json paths included; set is like {title1: 'cell1', title2: 'cell2', ...}
 	checkQueryTitle(table); if (!isPlain(where) || !isPlain(set)) toss('use', {table, where, set})//a call in the old positional shape fails here, by name, rather than deeper down
 	checkQueryCells(where); checkQueryRow(set)
 	if (!Object.keys(where).length || !Object.keys(set).length) toss('query', {table, where, set})//no filter would edit every row in the table, and nothing to set would edit nothing; either is a confused caller
-	for (let title of ['row_tag', 'row_tick', 'hide']) if (title in set) toss('query', {table, set})//a row's identity and its clock are never edited, and hide, where a table still has it, is queryHide's to set
+	for (let title of ['row_tag', 'row_tick', 'hide']) if (title in set) toss('query', {table, set})//a row's identity and its clock are never edited, and hide, while credential_table still has it, is never set
 	const {database} = await getDatabase()
 	let query = applyQueryCells(database.from(table).update(set), where)
 	let {data, error} = await query.select()

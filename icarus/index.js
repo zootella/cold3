@@ -177,7 +177,6 @@ queryGet,
 queryGetAny,
 queryAddRow,
 queryAddRows,
-queryHide,
 queryUpdate,
 queryDelete,
 
