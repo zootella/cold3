@@ -19,7 +19,7 @@ doorAsyncLocalStorageRun,
 queryGet, queryGetAny, queryAddRow, queryAddRows, queryUpdate, queryDelete, queryTop, queryCountRows, queryCountAllRows,
 } from './level2.js'
 import {
-ledgerAdd, ledgerAddMany, otpConstants, recordHit, credentialRows,
+ledgerAdd, ledgerAddMany, otpConstants, recordHit, credentialRows, credentialSet,
 trailAdd, trailAddMany, trailCount, trailGet, trailGetAny, trailRecent,
 credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameGet, credentialNameSet, credentialNameRemove, credentialNameCheck,
@@ -894,12 +894,38 @@ grid(async () => {//wallet: writes store the triad, and the lookups normalize an
 	await credentialWalletRemove({userTag: bob, f0: addr2.toLowerCase()})
 	ok((await credentialWalletHolder({f0: addr2})) == false)//released
 })
-grid(async () => {//the oauth claim's expression index: the filter's spelling matches credential15, proven by the planner choosing it
+grid(async () => {//the oauth claim's expression index: the filter's spelling matches the index, proven by the planner choosing it
 	let {pglite} = await getDatabase()
 	await pglite.query('SET enable_seqscan = off')//a handful of rows would always seq scan, so forcing index consideration is what proves the spelling agreement; the live read-only EXPLAIN after deploy proves the real planner's own choice
 	let plan = (await pglite.query(`EXPLAIN SELECT * FROM credential_table WHERE hide = 0 AND type_text = 'Oauth.' AND json->>'identifier' = 'd123'`)).rows.map(r => Object.values(r)[0]).join('\n')
 	await pglite.query('SET enable_seqscan = on')
-	ok(plan.includes('credential15'))//the index built from the SQL() block's DDL serves the exact expression level2's filter generates
+	ok(plan.includes('credential15') || plan.includes('credential20'))//credential15 and its successor credential20 both index the expression, and either serves the exact spelling level2's filter generates
+});
+grid(async () => {//the unique indexes: what the code keeps one of, the table refuses a second of, closing the race a read-then-check leaves open
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let refused = async (f) => { let refusal = false; try { await f() } catch (e) { refusal = e.message == 'supabase' && e.watch.error.code == '23505' } return refusal }//true only for the index refusing the row, which the query helper tosses with the error; a toss for any other reason is a broken test
+	let userTag = Tag(), other = Tag(), browserHash = random32()
+
+	await credentialSet({userTag, type: 'Browser.', event: 'Proven.', hash: browserHash})
+	ok(await refused(() => credentialSet({userTag: other, type: 'Browser.', event: 'Proven.', hash: browserHash})))//one session per browser, whoever's
+
+	await credentialSet({userTag, type: 'Name.', event: 'Proven.', f0: 'alice', f1: 'Alice', f2: 'Alice'})
+	ok(await refused(() => credentialSet({userTag, type: 'Name.', event: 'Proven.', f0: 'alice2', f1: 'Alice2', f2: 'Alice2'})))//one name per user
+	ok(await refused(() => credentialSet({userTag: other, type: 'Name.', event: 'Proven.', f0: 'alice', f1: 'Alice', f2: 'Alice'})))//one holder per name
+	await credentialSet({userTag, type: 'Password.', event: 'Proven.', hash: random32(), json: {cycles: 50}})
+	ok(await refused(() => credentialSet({userTag, type: 'Password.', event: 'Proven.', hash: random32(), json: {cycles: 50}})))//one password per user
+	await credentialSet({userTag, type: 'Totp.', event: 'Challenged.', json: {secret: 'S1'}})
+	ok(await refused(() => credentialSet({userTag, type: 'Totp.', event: 'Proven.', json: {secret: 'S2'}})))//one totp per user, in either stage
+
+	let address = {f0: 'a@example.com', f1: 'a@example.com', f2: 'a@example.com'}
+	await credentialSet({userTag, type: 'Email.', event: 'Proven.', ...address})
+	ok(await refused(() => credentialSet({userTag: other, type: 'Email.', event: 'Proven.', ...address})))//one holder per address
+	await credentialSet({userTag: other, type: 'Email.', event: 'Challenged.', ...address})//but another user may challenge it, which is how a takeover starts
+
+	await credentialSet({userTag, type: 'Oauth.', event: 'Proven.', json: {provider: 'Discord.', identifier: 'd1'}})
+	ok(await refused(() => credentialSet({userTag: other, type: 'Oauth.', event: 'Proven.', json: {provider: 'Discord.', identifier: 'd1'}})))//one account per oauth identity
+	await credentialSet({userTag: other, type: 'Oauth.', event: 'Proven.', json: {provider: 'Github.', identifier: 'd1'}})//the same identifier at another provider is another identity
 })
 grid(async () => {//name: get by userTag, get by raw1, check collisions
 	let {clear} = await getDatabase()

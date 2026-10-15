@@ -931,7 +931,7 @@ export async function credentialOtpProven({userTag, type, v, tag = ''}) {//the u
 //an address is a Proven. row she holds or a live Challenged. row she is proving, and each live challenge is also an enter box
 export async function credentialOtpGet({userTag, type}) {
 	checkTag(userTag)
-	let rows = await credentialRows({user_tag: userTag, type_text: type})//her Proven. and Challenged. rows, newest first; a Mentioned. row is an old one, neither stage, and is skipped until the cleanup deletes it
+	let rows = await credentialRows({user_tag: userTag, type_text: type})//her Proven. and Challenged. rows, newest first
 	let proofs = rows.filter(r => r.event_text == 'Proven.')
 	let live = rows.filter(r => r.event_text == 'Challenged.' && hasText(r.json.tag) && Now() < r.row_tick + otpConstants.expiration)//live while it carries a tag and is inside its twenty minutes; a stale one is ignored until the next send replaces it, and a row without a tag, like a test fixture, never reads as live
 	let addresses = proofs.map(r => ({f0: r.f0_text, f1: r.f1_text, f2: r.f2_text, event: 'Proven.'}))
@@ -1049,7 +1049,7 @@ export async function credentialNameRemove({userTag}) {
 //permanently close a user's account: delete every credential row of hers, whatever its type or stage, since a closed account holds nothing and the ledger is the audit trail
 export async function credentialCloseAccount({userTag}) {
 	checkTag(userTag)
-	await queryDelete('credential_table', {user_tag: userTag})//every row of hers in one statement, a flow in flight and any old hidden rows included
+	await queryDelete('credential_table', {user_tag: userTag})//every row of hers in one statement, a flow in flight included
 	await ledgerAdd({action: 'Account.', event: 'Closed.', userTag})//one row for the closure; what the account held is the Proven. and Removed. rows above it
 }
 
@@ -1059,11 +1059,11 @@ SQL(`
 CREATE TABLE credential_table (
 	row_tag    CHAR(21)  NOT NULL PRIMARY KEY,
 	row_tick   BIGINT    NOT NULL,
-	hide       BIGINT    NOT NULL,  -- 0 visible, nonzero hidden; the one table that still has the column: reads go through credentialRows, inserts say 0, nothing sets it, so a nonzero row is an old one waiting for the cleanup
+	hide       BIGINT    NOT NULL DEFAULT 0,  -- the one table that still has the column, and no row is hidden anymore: reads ask for 0 through credentialRows, inserts say 0 as the default does, and nothing sets it
 
 	user_tag   CHAR(21)  NOT NULL,  -- the user proving or holding this credential
 	type_text  TEXT      NOT NULL,  -- credential type, like "Phone.", "Oauth.", "Ethereum.", "Totp.", "Password." or others
-	event_text TEXT      NOT NULL,  -- 'Challenged.' for a flow in flight or 'Proven.' for a credential held; an old row may still say 'Mentioned.', and leaves with the cleanup
+	event_text TEXT      NOT NULL,  -- 'Challenged.' for a flow in flight or 'Proven.' for a credential held
 
 	-- if this credential is a name or address, like email, phone, oauth, web3 wallet, store the validated forms here:
 	f0_text    TEXT      NOT NULL,  -- normalized form of address or name, to match as unique
@@ -1083,6 +1083,18 @@ CREATE INDEX credential4 ON credential_table (hide, type_text, f2_text) WHERE f2
 
 CREATE INDEX credential13 ON credential_table (hide, type_text, hash_text) WHERE hash_text != '';  -- the Browser. signed-in lookup
 CREATE INDEX credential15 ON credential_table (hide, type_text, (json->>'identifier')) WHERE json->>'identifier' IS NOT NULL;  -- the oauth claim, spelled ->> with no casts, the spelling level2's filters generate
+
+CREATE INDEX credential16 ON credential_table (user_tag, row_tick DESC);  -- credential1 without hide: every row of a user, newest first
+CREATE INDEX credential17 ON credential_table (type_text, f0_text)   WHERE f0_text   != '';  -- credential2 without hide: a name or address by its normalized form
+CREATE INDEX credential18 ON credential_table (type_text, f2_text)   WHERE f2_text   != '';  -- credential4 without hide: a name by its display form; credential3, by f1_text, has no successor since nothing reads by it
+CREATE INDEX credential19 ON credential_table (type_text, hash_text) WHERE hash_text != '';  -- credential13 without hide: the Browser. signed-in lookup
+CREATE INDEX credential20 ON credential_table (type_text, (json->>'identifier')) WHERE json->>'identifier' IS NOT NULL;  -- credential15 without hide: the oauth claim
+
+-- what the code keeps one of, the table refuses a second of, closing the race a read-then-check leaves open
+CREATE UNIQUE INDEX credential21 ON credential_table (hash_text)           WHERE type_text = 'Browser.';  -- one session per browser
+CREATE UNIQUE INDEX credential22 ON credential_table (user_tag, type_text) WHERE type_text IN ('Name.', 'Password.', 'Totp.');  -- one name, one password, and one totp per user, the totp in either stage
+CREATE UNIQUE INDEX credential23 ON credential_table (type_text, f0_text)  WHERE event_text = 'Proven.' AND type_text IN ('Name.', 'Email.', 'Phone.', 'Ethereum.');  -- one holder per proven name, address, or wallet; Oauth. stays out, its f0 being the address the provider reported
+CREATE UNIQUE INDEX credential24 ON credential_table ((json->>'provider'), (json->>'identifier')) WHERE type_text = 'Oauth.' AND event_text = 'Proven.';  -- one account per oauth identity, keyed on both since identifiers from different providers may collide
 
 ALTER TABLE credential_table ENABLE ROW LEVEL SECURITY;  -- zero policies: default-deny for supabase's unused anon and authenticated roles; the worker's service_role and PGlite's table owner both bypass
 `)
